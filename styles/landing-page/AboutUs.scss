@@ -1,0 +1,268 @@
+// ============================================================
+//  GOLDEN PRIVATE WEALTH BANK — About Us Section
+//  Split editorial layout: full-bleed image left,
+//  long-form content right. Serif headline, gold accents.
+// ============================================================
+
+// ── Section shell ────────────────────────────────────────────
+.about-us {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100svh;
+    overflow: hidden;
+
+    background: var(--color-bg-base, #131829);
+
+    // Faint gold rule between columns
+    &::before {
+        content: '';
+        position: absolute;
+        top: 8%;
+        bottom: 8%;
+        left: 50%;
+        width: 1px;
+        background: linear-gradient(to bottom,
+                transparent,
+                rgba(196, 149, 32, 0.25) 20%,
+                rgba(196, 149, 32, 0.40) 50%,
+                rgba(196, 149, 32, 0.25) 80%,
+                transparent);
+        z-index: 2;
+        pointer-events: none;
+    }
+}
+
+// ── Left — Image panel ───────────────────────────────────────
+.about-us>img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 600px;
+    object-fit: cover;
+    object-position: center top;
+
+    // Layered overlay: darken right edge to blend into the divider
+    mask-image: linear-gradient(to right,
+            black 60%,
+            transparent 100%);
+    -webkit-mask-image: linear-gradient(to right,
+            black 60%,
+            transparent 100%);
+
+    filter: sepia(0.18) contrast(1.06) brightness(0.88);
+    transition: filter 600ms ease, transform 600ms cubic-bezier(0.16, 1, 0.30, 1);
+
+    &:hover {
+        filter: sepia(0.08) contrast(1.08) brightness(0.95);
+        transform: scale(1.015);
+    }
+}
+
+// ── Right — Content panel ─────────────────────────────────────
+.about-us-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-8, 2rem);
+
+    padding: var(--space-20, 5rem) var(--space-16, 4rem) var(--space-20, 5rem) var(--space-12, 3rem);
+
+    // Subtle right-edge gold warmth
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 70% 60% at 100% 50%,
+                rgba(196, 149, 32, 0.06) 0%,
+                transparent 70%);
+        pointer-events: none;
+    }
+}
+
+// ── Section label ─────────────────────────────────────────────
+.about-us-content::before {
+    content: 'About Us';
+    display: block;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.30em;
+    text-transform: uppercase;
+    color: var(--color-gold-500, #c49520);
+
+    padding-bottom: var(--space-4, 1rem);
+    border-bottom: 1px solid rgba(196, 149, 32, 0.25);
+    margin-bottom: calc(-1 * var(--space-2, 0.5rem));
+
+    width: fit-content;
+}
+
+// ── Headline ──────────────────────────────────────────────────
+.about-us-content h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(1.9rem, 3vw, 3rem);
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0;
+
+    // Two-tone: white base, gold on italic/last word via span if desired
+    color: var(--color-text-primary, #fdf6e3);
+
+    // Underscore flourish
+    span {
+        background: linear-gradient(90deg,
+                var(--color-gold-400, #d4a832),
+                var(--color-gold-200, #f7e8b0));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+}
+
+// ── Body copy wrapper ─────────────────────────────────────────
+.about-us-content>div:not(.strategy-framework-tags) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5, 1.25rem);
+
+    // Left accent rule
+    border-left: 2px solid rgba(196, 149, 32, 0.20);
+    padding-left: var(--space-6, 1.5rem);
+}
+
+// ── Body paragraphs ───────────────────────────────────────────
+.about-us-content p {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.825rem;
+    font-weight: 300;
+    line-height: 1.85;
+    letter-spacing: 0.01em;
+    color: var(--color-text-secondary, #d8dce8);
+    margin: 0;
+
+    // Drop cap on first paragraph
+    &:first-child::first-letter {
+        float: left;
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 3.4rem;
+        font-weight: 400;
+        line-height: 0.82;
+        margin: 0.06em 0.12em 0 0;
+        background: linear-gradient(135deg,
+                var(--color-gold-shadow, #8a5e0a),
+                var(--color-gold-shine, #f0d068));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+}
+
+// ── Strategy framework tags ───────────────────────────────────
+.strategy-framework-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2, 0.5rem);
+    padding-top: var(--space-4, 1rem);
+
+    // Thin gold rule above
+    border-top: 1px solid rgba(196, 149, 32, 0.18);
+
+    span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4em;
+        padding: 0.38rem 0.85rem;
+
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--color-gold-300, #e8c96a);
+
+        background: rgba(196, 149, 32, 0.07);
+        border: 1px solid rgba(196, 149, 32, 0.22);
+        border-radius: 2px;
+
+        transition:
+            background 220ms ease,
+            border-color 220ms ease,
+            color 220ms ease,
+            transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1),
+            box-shadow 220ms ease;
+
+        // Dot prefix
+        &::before {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: var(--color-gold-500, #c49520);
+            flex-shrink: 0;
+            transition: background 220ms ease;
+        }
+
+        &:hover {
+            background: rgba(196, 149, 32, 0.14);
+            border-color: rgba(196, 149, 32, 0.55);
+            color: var(--color-gold-100, #fdf6e3);
+            transform: translateY(-2px);
+            box-shadow:
+                0 4px 16px rgba(196, 149, 32, 0.18),
+                0 0 6px rgba(196, 149, 32, 0.10);
+
+            &::before {
+                background: var(--color-gold-shine, #f0d068);
+            }
+        }
+    }
+}
+
+// ── Responsive ────────────────────────────────────────────────
+@media (max-width: 1024px) {
+    .about-us-content {
+        padding: var(--space-16, 4rem) var(--space-10, 2.5rem) var(--space-16, 4rem) var(--space-8, 2rem);
+    }
+}
+
+@media (max-width: 768px) {
+    .about-us {
+        grid-template-columns: 1fr;
+
+        &::before {
+            display: none;
+        }
+    }
+
+    .about-us>img {
+        min-height: 340px;
+        max-height: 420px;
+        mask-image: linear-gradient(to bottom,
+                black 60%,
+                transparent 100%);
+        -webkit-mask-image: linear-gradient(to bottom,
+                black 60%,
+                transparent 100%);
+    }
+
+    .about-us-content {
+        padding: var(--space-10, 2.5rem) var(--space-6, 1.5rem) var(--space-12, 3rem);
+    }
+
+    .about-us-content h2 {
+        font-size: clamp(1.6rem, 6vw, 2.2rem);
+    }
+}
+
+@media (max-width: 480px) {
+    .about-us-content>div:not(.strategy-framework-tags) {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid rgba(196, 149, 32, 0.20);
+        padding-top: var(--space-5, 1.25rem);
+    }
+}

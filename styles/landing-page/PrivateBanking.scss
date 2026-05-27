@@ -1,0 +1,350 @@
+// ============================================================
+//  GOLDEN PRIVATE WEALTH BANK — Private Banking Section
+//  Dark base, asymmetric header + 3-column card grid.
+//  Cards use a "lit from above" gold border treatment.
+// ============================================================
+
+// ── Section shell ─────────────────────────────────────────────
+.private-banking-section {
+    position: relative;
+    overflow: hidden;
+    padding: var(--space-24, 6rem) var(--space-12, 3rem);
+    background: var(--color-bg-base, #131829);
+
+    // Ambient radial — warm center glow
+    &::before {
+        content: '';
+        position: absolute;
+        top: -10%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 70%;
+        height: 60%;
+        background: radial-gradient(ellipse at 50% 0%,
+                rgba(196, 149, 32, 0.07) 0%,
+                transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    // Decorative ruled lines — faint horizontal texture
+    &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: repeating-linear-gradient(0deg,
+                rgba(196, 149, 32, 0.025) 0px,
+                rgba(196, 149, 32, 0.025) 1px,
+                transparent 1px,
+                transparent 80px);
+        pointer-events: none;
+        z-index: 0;
+    }
+}
+
+// All content above pseudo layers
+.section-header,
+.banking-grid {
+    position: relative;
+    z-index: 1;
+}
+
+// ── Section header ─────────────────────────────────────────────
+.section-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+    gap: var(--space-8, 2rem);
+    max-width: 1200px;
+    margin: 0 auto var(--space-16, 4rem);
+    padding-bottom: var(--space-10, 2.5rem);
+    border-bottom: 1px solid rgba(196, 149, 32, 0.15);
+
+    // Eyebrow above h2
+    &::before {
+        content: 'Private Banking';
+        grid-column: 1 / -1;
+        display: block;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.6rem;
+        font-weight: 600;
+        letter-spacing: 0.30em;
+        text-transform: uppercase;
+        color: var(--color-gold-500, #c49520);
+        margin-bottom: calc(-1 * var(--space-4, 1rem));
+    }
+}
+
+.section-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 4vw, 3.6rem);
+    font-weight: 400;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary, #fdf6e3);
+    margin: 0;
+
+    // "Redefined" gets the gold treatment via last word targeting
+    // Wrap in <em> in JSX for gold — or let CSS handle it:
+    em {
+        font-style: italic;
+        background: linear-gradient(90deg,
+                var(--color-gold-400, #d4a832),
+                var(--color-gold-shine, #f0d068));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+}
+
+.section-header>p {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 300;
+    line-height: 1.75;
+    color: rgba(216, 220, 232, 0.55);
+    margin: 0;
+    max-width: 380px;
+    justify-self: end;
+    align-self: end;
+    padding-bottom: 0.2rem;
+}
+
+// ── Banking card grid ──────────────────────────────────────────
+.banking-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0; // hairlines handled by border trick
+    max-width: 1200px;
+    margin: 0 auto;
+    border: 1px solid rgba(196, 149, 32, 0.14);
+}
+
+// ── Banking card ───────────────────────────────────────────────
+.banking-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5, 1.25rem);
+    padding: var(--space-10, 2.5rem);
+    background: var(--color-bg-elevated, #1a2038);
+    overflow: hidden;
+    cursor: default;
+    transition: background 350ms ease;
+
+    // Right divider between cards (not on last)
+    &:not(:last-child) {
+        border-right: 1px solid rgba(196, 149, 32, 0.14);
+    }
+
+    // Top shimmer bar — reveals on hover
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(196, 149, 32, 0) 30%,
+                transparent 100%);
+        transition: background 400ms ease;
+    }
+
+    // Card number watermark
+    &::after {
+        content: attr(data-index);
+        position: absolute;
+        bottom: var(--space-6, 1.5rem);
+        right: var(--space-6, 1.5rem);
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 6rem;
+        font-weight: 700;
+        line-height: 1;
+        color: rgba(196, 149, 32, 0.05);
+        pointer-events: none;
+        user-select: none;
+        transition: color 350ms ease, transform 400ms cubic-bezier(0.16, 1, 0.30, 1);
+    }
+
+    // Icon placeholder — decorative top-left accent mark
+    .banking-card__accent {
+        width: 32px;
+        height: 2px;
+        background: linear-gradient(90deg,
+                var(--color-gold-500, #c49520),
+                var(--color-gold-300, #e8c96a));
+        border-radius: 1px;
+        flex-shrink: 0;
+    }
+
+    &:hover {
+        background: var(--color-bg-surface, #222845);
+
+        &::before {
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    rgba(196, 149, 32, 0.65) 50%,
+                    transparent 100%);
+        }
+
+        &::after {
+            color: rgba(196, 149, 32, 0.08);
+            transform: scale(1.04) translate(-4px, -4px);
+        }
+
+        h3 {
+            color: var(--color-gold-200, #f7e8b0);
+        }
+
+        .banking-card__icon svg {
+            color: var(--color-gold-300, #e8c96a);
+            transform: translateY(-3px);
+        }
+    }
+}
+
+// ── Card icon ─────────────────────────────────────────────────
+.banking-card__icon {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    margin-bottom: var(--space-1, 0.25rem);
+
+    svg {
+        width: 100%;
+        height: 100%;
+        color: var(--color-gold-500, #c49520);
+        transition:
+            color 280ms ease,
+            transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+}
+
+// ── Card headline ─────────────────────────────────────────────
+.banking-card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.55rem;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary, #fdf6e3);
+    margin: 0;
+    transition: color 280ms ease;
+}
+
+// ── Card body ─────────────────────────────────────────────────
+.banking-card p {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.80rem;
+    font-weight: 300;
+    line-height: 1.80;
+    color: rgba(216, 220, 232, 0.55);
+    margin: 0;
+    flex: 1;
+}
+
+// ── Card footer link ──────────────────────────────────────────
+.banking-card__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: var(--space-2, 0.5rem);
+    padding-top: var(--space-5, 1.25rem);
+    border-top: 1px solid rgba(196, 149, 32, 0.12);
+
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.60rem;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-gold-500, #c49520);
+    text-decoration: none;
+    transition: color 220ms ease, gap 220ms ease;
+
+    svg {
+        width: 14px;
+        height: 14px;
+        color: currentColor;
+        transition: transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    &:hover {
+        color: var(--color-gold-200, #f7e8b0);
+        gap: 0.7rem;
+
+        svg {
+            transform: translateX(3px);
+        }
+    }
+}
+
+// ── Bottom quote strip ────────────────────────────────────────
+.private-banking-section .banking-quote {
+    position: relative;
+    z-index: 1;
+    max-width: 700px;
+    margin: var(--space-16, 4rem) auto 0;
+    text-align: center;
+
+    blockquote {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: clamp(1.1rem, 2vw, 1.45rem);
+        font-weight: 300;
+        font-style: italic;
+        line-height: 1.55;
+        color: rgba(216, 220, 232, 0.50);
+        margin: 0 0 var(--space-4, 1rem);
+
+        &::before {
+            content: '\201C';
+        }
+
+        &::after {
+            content: '\201D';
+        }
+    }
+
+    cite {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.58rem;
+        font-weight: 600;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: rgba(196, 149, 32, 0.50);
+        font-style: normal;
+    }
+}
+
+// ── Responsive ────────────────────────────────────────────────
+@media (max-width: 1024px) {
+    .banking-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .banking-card:not(:last-child) {
+        border-right: none;
+        border-bottom: 1px solid rgba(196, 149, 32, 0.14);
+    }
+
+    .banking-card {
+        padding: var(--space-8, 2rem) var(--space-8, 2rem);
+    }
+}
+
+@media (max-width: 768px) {
+    .private-banking-section {
+        padding: var(--space-16, 4rem) var(--space-6, 1.5rem);
+    }
+
+    .section-header {
+        grid-template-columns: 1fr;
+        gap: var(--space-4, 1rem);
+
+        >p {
+            justify-self: start;
+            max-width: 100%;
+        }
+    }
+}

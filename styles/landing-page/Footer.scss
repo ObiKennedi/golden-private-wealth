@@ -1,0 +1,132 @@
+.global-footer {
+    width: 100%;
+    background: var(--color-navy-950, #0d1120);
+    border-top: 1px solid var(--color-border, rgba(196, 149, 32, 0.20));
+    padding: var(--space-16, 4rem) 0 var(--space-6, 1.5rem) 0;
+    position: relative;
+    z-index: 10;
+
+    .footer-container {
+        max-width: var(--container-2xl, 1440px);
+        width: 100%;
+        margin: 0 auto;
+        padding: 0 var(--space-8, 2rem);
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-12, 3rem);
+
+        @media (max-width: 960px) {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: var(--space-10, 2.5rem);
+        }
+    }
+
+    // Brand and Tagline Style
+    .footer-brand-col {
+        display: flex;
+        flex-direction: column;
+        max-width: 300px;
+
+        @media (max-width: 960px) {
+            align-items: center;
+        }
+
+        .footer-logo {
+            width: 100%;
+            max-width: 160px;
+            height: auto;
+            object-fit: contain;
+            margin-bottom: var(--space-4, 1rem);
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+        }
+
+        .brand-tagline {
+            font-family: var(--font-display);
+            font-size: var(--font-size-sm, 0.8125rem);
+            color: var(--color-text-accent, var(--color-gold-400));
+            font-style: italic;
+            letter-spacing: var(--letter-spacing-wide, 0.08em);
+        }
+    }
+
+    // Grid Layout for Links
+    .footer-links-grid {
+        display: flex;
+        gap: var(--space-16, 4rem);
+
+        @media (max-width: 960px) {
+            width: 100%;
+            justify-content: space-around;
+            gap: var(--space-6, 1.5rem);
+        }
+
+        @media (max-width: 640px) {
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-8, 2rem);
+        }
+    }
+
+    // Individual Column Setup
+    .footer-nav-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3, 0.75rem);
+
+        h4 {
+            font-family: var(--font-body);
+            font-size: var(--font-size-xs, 0.6875rem);
+            font-weight: var(--font-weight-bold, 700);
+            text-transform: uppercase;
+            letter-spacing: var(--letter-spacing-wider, 0.15em);
+            color: var(--color-gold-100, #fdf6e3);
+            margin-bottom: var(--space-2, 0.5rem);
+        }
+
+        a {
+            font-family: var(--font-body);
+            font-size: var(--font-size-sm, 0.8125rem);
+            font-weight: var(--font-weight-regular, 400);
+            color: var(--color-text-secondary, var(--color-wordmark-sub));
+            text-decoration: none;
+            white-space: nowrap;
+            transition: color var(--transition-base, 220ms ease), transform var(--transition-base, 220ms ease);
+
+            &:hover {
+                color: var(--color-gold-300, #e8c96a);
+                transform: translateX(2px);
+            }
+        }
+
+        @media (max-width: 960px) {
+            a:hover {
+                transform: scale(1.03); // Pop forward instead of moving sideways on center alignments
+            }
+        }
+    }
+
+    // Bottom Compliance / Disclaimer Row
+    .footer-bottom-bar {
+        max-width: var(--container-2xl, 1440px);
+        width: 100%;
+        margin: var(--space-12, 3rem) auto 0 auto;
+        padding: var(--space-6, 1.5rem) var(--space-8, 2rem) 0 var(--space-8, 2rem);
+        border-top: 1px solid var(--color-border-subtle, rgba(196, 149, 32, 0.08));
+
+        .footer-disclaimer {
+            p {
+                font-family: var(--font-body);
+                font-size: 0.6875rem; // Equivalent to your --font-size-xs
+                line-height: var(--line-height-normal, 1.6);
+                color: var(--color-text-muted, rgba(216, 220, 232, 0.40));
+                text-align: justify;
+
+                @media (max-width: 960px) {
+                    text-align: center;
+                }
+            }
+        }
+    }
+}

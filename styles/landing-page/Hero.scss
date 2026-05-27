@@ -1,0 +1,164 @@
+.hero-section {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    min-height: 640px;
+    max-height: 1200px;
+    overflow: hidden;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000014b0;
+
+    .hero-video {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        transform-origin: center center;
+        animation: hero-zoom 20s ease-in-out infinite alternate;
+        z-index: -1;
+    }
+
+    .hero-content {
+        text-align: center;
+        z-index: 1;
+        padding: 15px;
+
+        img {
+            width: 320px;
+            height: 400px;
+        }
+
+        p {
+            color: var(--color-text-accent);
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            letter-spacing: var(--letter-spacing-wide);
+
+            @media (max-width: 768px) {
+                font-size: var(--font-size-md);
+            }
+        }
+
+        >div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-4, 1rem);
+            width: 100%;
+            flex-wrap: wrap;
+            margin-top: 20px;
+
+            // Target RedirectButton output elements inside the div wrapper
+            a,
+            button {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0.85rem 2.4rem;
+                overflow: hidden;
+
+                font-family: var(--font-body);
+                font-size: var(--font-size-xs);
+                font-weight: var(--font-weight-semibold);
+                letter-spacing: var(--letter-spacing-wider);
+                text-transform: uppercase;
+                text-decoration: none;
+                white-space: nowrap;
+                border-radius: var(--radius-sm, 2px);
+                cursor: pointer;
+
+                transition:
+                    transform var(--transition-base),
+                    box-shadow var(--transition-base),
+                    border-color var(--transition-base);
+
+                // Subtle reflective light sweep sheen effect
+                &::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -75%;
+                    width: 50%;
+                    height: 100%;
+                    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+                    transform: skewX(-20deg);
+                    transition: left 0ms;
+                }
+
+                &:hover::after {
+                    left: 130%;
+                    transition: left 550ms var(--ease-out);
+                }
+
+                &:hover {
+                    transform: translateY(-2px);
+                }
+
+                &:active {
+                    transform: translateY(0);
+                }
+
+                // Primary Filled Button Styles (Get Started)
+                &:first-child {
+                    color: var(--color-text-inverse);
+                    background: var(--gradient-gold-shield);
+                    background-size: 200% 100%;
+                    background-position: 100% 0;
+                    border: 1px solid var(--color-border-strong);
+                    box-shadow: var(--shadow-gold-sm), var(--shadow-inset-gold);
+
+                    &:hover {
+                        background-position: 0% 0;
+                        box-shadow: var(--shadow-gold-md), var(--shadow-inset-gold);
+                        border-color: var(--color-accent-shine);
+                    }
+                }
+
+                // Secondary Outlined / Ghost Styles (About Us)
+                &:last-child {
+                    color: var(--color-gold-200);
+                    background: rgba(13, 17, 32, 0.35);
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+                    border: 1px solid var(--color-border);
+                    box-shadow: var(--shadow-sm);
+
+                    &:hover {
+                        color: var(--color-gold-100);
+                        background: rgba(196, 149, 32, 0.10);
+                        border-color: var(--color-border-strong);
+                        box-shadow: 0 0 12px rgba(196, 149, 32, 0.15), var(--shadow-md);
+                    }
+                }
+            }
+
+            // Mobile Layout Transformation Matrix
+            @media (max-width: 640px) {
+                flex-direction: column; // Stacks elements vertically on small screens
+                gap: var(--space-3, 0.75rem);
+
+                a,
+                button {
+                    width: 100%;
+                    max-width: 320px; // Keeps full-width layouts from looking awkwardly wide
+                    padding: 0.95rem 2rem;
+                }
+            }
+        }
+    }
+}
+
+@keyframes hero-zoom {
+    0% {
+        transform: scale(1.0);
+    }
+
+    100% {
+        transform: scale(1.1);
+    }
+}

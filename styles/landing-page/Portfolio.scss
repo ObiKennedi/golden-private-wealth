@@ -1,0 +1,374 @@
+// ============================================================
+//  GOLDEN PRIVATE WEALTH BANK — Portfolio Section
+//  Full-width dark section, 2×2 card grid, methodology strip.
+// ============================================================
+
+// ── Section shell ─────────────────────────────────────────────
+.portfolio-section {
+    position: relative;
+    overflow: hidden;
+    padding: var(--space-24, 6rem) var(--space-12, 3rem);
+    background: var(--color-bg-elevated, #1a2038);
+    border-top: 1px solid rgba(196, 149, 32, 0.12);
+    border-bottom: 1px solid rgba(196, 149, 32, 0.12);
+
+    // Large diagonal ruled texture — tilted ledger lines
+    &::before {
+        content: '';
+        position: absolute;
+        inset: -100px;
+        background-image: repeating-linear-gradient(-45deg,
+                rgba(196, 149, 32, 0.018) 0px,
+                rgba(196, 149, 32, 0.018) 1px,
+                transparent 1px,
+                transparent 60px);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    // Bottom gold bloom — lifts into methodology strip
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+        height: 50%;
+        background: radial-gradient(ellipse at 50% 100%,
+                rgba(196, 149, 32, 0.07) 0%,
+                transparent 65%);
+        pointer-events: none;
+        z-index: 0;
+    }
+}
+
+.portfolio-header,
+.portfolio-grid,
+.portfolio-methodology {
+    position: relative;
+    z-index: 1;
+}
+
+// ── Header ────────────────────────────────────────────────────
+.portfolio-header {
+    max-width: 720px;
+    margin: 0 auto var(--space-16, 4rem);
+    text-align: center;
+}
+
+.portfolio-subtitle {
+    display: inline-block;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.30em;
+    text-transform: uppercase;
+    color: var(--color-gold-500, #c49520);
+    margin-bottom: var(--space-5, 1.25rem);
+
+    &::before,
+    &::after {
+        content: '—';
+        margin: 0 0.55em;
+        opacity: 0.50;
+    }
+}
+
+.portfolio-header h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 4vw, 3.6rem);
+    font-weight: 400;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    color: var(--color-text-primary, #fdf6e3);
+    margin: 0 0 var(--space-6, 1.5rem);
+}
+
+.portfolio-header>p {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.83rem;
+    font-weight: 300;
+    line-height: 1.82;
+    color: rgba(216, 220, 232, 0.55);
+    margin: 0 auto;
+    max-width: 600px;
+}
+
+// ── Cards grid ─────────────────────────────────────────────────
+.portfolio-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    max-width: 1200px;
+    margin: 0 auto var(--space-2, 0.5rem);
+    background: rgba(196, 149, 32, 0.10);
+    border: 1px solid rgba(196, 149, 32, 0.13);
+    gap: 1px;
+}
+
+// ── Portfolio card ─────────────────────────────────────────────
+.portfolio-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4, 1rem);
+    padding: var(--space-10, 2.5rem);
+    background: var(--color-bg-elevated, #1a2038);
+    overflow: hidden;
+    cursor: default;
+    transition: background 340ms ease;
+
+    // Top edge shimmer
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0 0 auto 0;
+        height: 1px;
+        background: linear-gradient(90deg,
+                transparent,
+                rgba(196, 149, 32, 0) 40%,
+                transparent);
+        transition: background 380ms ease;
+    }
+
+    // Corner accent — top-left gold bracket
+    &::after {
+        content: '';
+        position: absolute;
+        top: var(--space-8, 2rem);
+        left: var(--space-8, 2rem);
+        width: 12px;
+        height: 12px;
+        border-top: 1.5px solid rgba(196, 149, 32, 0.30);
+        border-left: 1.5px solid rgba(196, 149, 32, 0.30);
+        transition: border-color 300ms ease, width 300ms ease, height 300ms ease;
+    }
+
+    &:hover {
+        background: var(--color-bg-surface, #222845);
+
+        &::before {
+            background: linear-gradient(90deg,
+                    transparent,
+                    rgba(196, 149, 32, 0.65) 50%,
+                    transparent);
+        }
+
+        &::after {
+            border-color: rgba(196, 149, 32, 0.65);
+            width: 18px;
+            height: 18px;
+        }
+
+        .portfolio-icon-wrapper {
+            color: var(--color-gold-200, #f7e8b0);
+            border-color: rgba(196, 149, 32, 0.45);
+            background: rgba(196, 149, 32, 0.12);
+            transform: translateY(-2px);
+        }
+
+        h3 {
+            color: var(--color-gold-200, #f7e8b0);
+        }
+    }
+}
+
+// ── Icon wrapper ──────────────────────────────────────────────
+.portfolio-icon-wrapper {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    color: var(--color-gold-500, #c49520);
+    background: rgba(196, 149, 32, 0.07);
+    border: 1px solid rgba(196, 149, 32, 0.20);
+
+    // Diamond shape — rotated square
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+
+    transition:
+        color 280ms ease,
+        background 280ms ease,
+        border-color 280ms ease,
+        transform 350ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+// ── Card headline ─────────────────────────────────────────────
+.portfolio-card h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--color-text-primary, #fdf6e3);
+    margin: 0;
+    transition: color 280ms ease;
+}
+
+// ── Card body ─────────────────────────────────────────────────
+.portfolio-card>p {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.79rem;
+    font-weight: 300;
+    line-height: 1.82;
+    color: rgba(216, 220, 232, 0.55);
+    margin: 0;
+}
+
+// ── Methodology strip ─────────────────────────────────────────
+.portfolio-methodology {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 1px;
+    max-width: 1200px;
+    margin: 0 auto;
+    background: rgba(196, 149, 32, 0.10);
+    border: 1px solid rgba(196, 149, 32, 0.13);
+    border-top: none; // shares top border with grid
+}
+
+// ── Methodology content ───────────────────────────────────────
+.methodology-content {
+    padding: var(--space-10, 2.5rem) var(--space-10, 2.5rem);
+    background: var(--color-bg-surface, #222845);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-4, 1rem);
+
+    // Left gold rule
+    border-left: 2px solid rgba(196, 149, 32, 0.22);
+    border-right: 1px solid rgba(196, 149, 32, 0.13);
+
+    h3 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 1.65rem;
+        font-weight: 400;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
+        color: var(--color-text-primary, #fdf6e3);
+        margin: 0;
+
+        // Eyebrow
+        &::before {
+            content: 'Methodology';
+            display: block;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.58rem;
+            font-weight: 600;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--color-gold-500, #c49520);
+            margin-bottom: var(--space-3, 0.75rem);
+        }
+    }
+
+    p {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.79rem;
+        font-weight: 300;
+        line-height: 1.82;
+        color: rgba(216, 220, 232, 0.55);
+        margin: 0;
+    }
+}
+
+// ── Metrics panel ─────────────────────────────────────────────
+.portfolio-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(196, 149, 32, 0.10);
+    height: 100%;
+}
+
+.metric-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: var(--space-8, 2rem) var(--space-6, 1.5rem);
+    background: var(--color-bg-elevated, #1a2038);
+    text-align: center;
+    transition: background 250ms ease;
+
+    &:hover {
+        background: var(--color-bg-surface, #222845);
+
+        .metric-value {
+            filter: brightness(1.2);
+        }
+    }
+}
+
+.metric-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.9rem;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg,
+            var(--color-gold-500, #c49520) 0%,
+            var(--color-gold-shine, #f0d068) 55%,
+            var(--color-gold-400, #d4a832) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: filter 250ms ease;
+}
+
+.metric-label {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.58rem;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: rgba(196, 149, 32, 0.48);
+    line-height: 1.45;
+    max-width: 120px;
+}
+
+// ── Responsive ────────────────────────────────────────────────
+@media (max-width: 1024px) {
+    .portfolio-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .portfolio-methodology {
+        grid-template-columns: 1fr;
+    }
+
+    .methodology-content {
+        border-right: none;
+        border-left: 2px solid rgba(196, 149, 32, 0.22);
+        border-bottom: 1px solid rgba(196, 149, 32, 0.13);
+    }
+
+    .portfolio-metrics {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .portfolio-section {
+        padding: var(--space-16, 4rem) var(--space-6, 1.5rem);
+    }
+
+    .portfolio-card {
+        padding: var(--space-8, 2rem) var(--space-6, 1.5rem);
+    }
+
+    .portfolio-metrics {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .methodology-content {
+        padding: var(--space-8, 2rem) var(--space-6, 1.5rem);
+    }
+}
