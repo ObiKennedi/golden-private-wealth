@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CLIENT
+  ADMIN
+}
+
+enum AccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  FROZEN
+}
+
+enum AccountType {
+  CHECKING
+  SAVINGS
+  INVESTMENT
+  CREDIT
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER
+  YIELD_PAYOUT
+  ASSET_PURCHASE
+  ASSET_SALE
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REJECTED
+}
+
+enum AssetClass {
+  EQUITY
+  FIXED_INCOME
+  COMMODITY
+  PRIVATE_EQUITY
+  ALTERNATIVE
+}
+
+enum VerificationType {
+  EMAIL_VERIFICATION
+  LOGIN_OTP
+  PASSWORD_RESET
+}
+
+model User {
+  id            String            @id @default(uuid())
+  email         String            @unique
+  passwordHash  String
+  fullName      String
+  role          UserRole          @default(CLIENT)
+  ssnEncrypted  String            @unique
+  emailVerified Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  otps          OneTimePassword[]
+  accounts      Account[]
+  portfolios    Portfolio[]
+  kycdocuments  KYCDocument[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model OneTimePassword {
+  id        String           @id @default(uuid())
+  code      String // Hashed inside server actions before storage
+  type      VerificationType
+  expiresAt DateTime
+  used      Boolean          @default(false)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime         @default(now())
+
+  @@map("one_time_passwords")
+}
+
+model Account {
+  id            String      @id @default(uuid())
+  accountNumber String      @unique
+  type          AccountType @default(CHECKING)
+  currency      String      @default("USD")
+  balance       Decimal     @default(0.00) @db.Decimal(18, 2)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sentTransactions     Transaction[] @relation("SenderAccount")
+  receivedTransactions Transaction[] @relation("ReceiverAccount")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("accounts")
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  referenceId   String            @unique
+  type          TransactionType
+  status        TransactionStatus @default(PENDING)
+  amount        Decimal           @db.Decimal(18, 2)
+  currency      String            @default("USD")
+  description   String?
+  failureReason String?
+
+  senderAccountId String?
+  senderAccount   Account? @relation("SenderAccount", fields: [senderAccountId], references: [id])
+
+  receiverAccountId String?
+  receiverAccount   Account? @relation("ReceiverAccount", fields: [receiverAccountId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@map("transactions")
+}
+
+model Portfolio {
+  id   String @id @default(uuid())
+  name String @default("Core Discretionary Mandate")
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  holdings   Asset[]
+  yieldNotes YieldStrategy[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("portfolios")
+}
+
+model Asset {
+  id           String     @id @default(uuid())
+  ticker       String
+  name         String
+  assetClass   AssetClass
+  quantity     Decimal    @db.Decimal(18, 6)
+  averageCost  Decimal    @db.Decimal(18, 4)
+  currentPrice Decimal    @db.Decimal(18, 4)
+
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("assets")
+}
+
+model YieldStrategy {
+  id           String    @id @default(uuid())
+  title        String
+  principalSum Decimal   @db.Decimal(18, 2)
+  maturityDate DateTime?
+  isActive     Boolean   @default(true)
+
+  portfolioId String
+  portfolio   Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("yield_strategies")
+}
+
+model KYCDocument {
+  id           String  @id @default(uuid())
+  documentType String
+  documentRef  String
+  verified     Boolean @default(false)
+  notes        String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("kyc_documents")
+}
+
+model AuditLog {
+  id        String  @id @default(uuid())
+  action    String
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
