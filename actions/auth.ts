@@ -96,6 +96,33 @@ export async function signUpAction(prevState: any, formData: FormData) {
             }
         });
 
+        // Create default accounts for new user
+        await prisma.account.createMany({
+            data: [
+                {
+                    accountNumber: `${accountNumber}-CHK`,
+                    type: "CHECKING",
+                    currency: "USD",
+                    balance: 0,
+                    userId: user.id,
+                },
+                {
+                    accountNumber: `${accountNumber}-SAV`,
+                    type: "SAVINGS",
+                    currency: "USD",
+                    balance: 0,
+                    userId: user.id,
+                },
+                {
+                    accountNumber: `${accountNumber}-INV`,
+                    type: "INVESTMENT",
+                    currency: "USD",
+                    balance: 0,
+                    userId: user.id,
+                },
+            ]
+        })
+
         await sendVerificationEmail(user.email, token.raw, "EMAIL_VERIFICATION");
     } catch (err: any) {
         console.error("[signUpAction]", err);

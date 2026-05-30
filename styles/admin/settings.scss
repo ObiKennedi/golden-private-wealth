@@ -1,0 +1,28 @@
+// @styles/admin/_settings.scss
+// Imports the shared profile styles and adds admin-specific overrides.
+// In your SCSS barrel: @use 'settings';
+
+@use '../user/profile.scss';
+
+.settingspage {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: var(--space-16);
+}
+
+// ── Admin badge variant ───────────────────────────────────────
+// profile-badge--admin is only used in the admin settings page
+.profile-badge--admin {
+    background: rgba(196, 149, 32, 0.16);
+    border: 1px solid rgba(196, 149, 32, 0.40);
+    color: var(--color-gold-300);
+}
+
+// ── Field note (password hint etc.) ──────────────────────────
+.profile__field-note {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-style: italic;
+    flex-shrink: 0;
+}

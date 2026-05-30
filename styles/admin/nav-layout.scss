@@ -1,0 +1,264 @@
+// @styles/admin/_Nav.scss
+
+.admin-side-nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sidebar-width);
+    height: 100vh;
+    background: var(--color-navy-950);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    z-index: var(--z-sticky);
+    padding: var(--space-8) 0 var(--space-6);
+
+    &__brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0 var(--space-6) var(--space-8);
+        border-bottom: 1px solid var(--color-border-subtle);
+        margin-bottom: var(--space-6);
+        gap: var(--space-1);
+    }
+
+    &__wordmark {
+        font-family: var(--font-display);
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-semibold);
+        letter-spacing: var(--letter-spacing-widest);
+        background: var(--gradient-wordmark);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: var(--line-height-tight);
+    }
+
+    &__wordmark-sub {
+        font-family: var(--font-body);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-wider);
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+        margin-top: var(--space-1);
+    }
+
+    &__list {
+        list-style: none;
+        flex: 1;
+        padding: 0 var(--space-4);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+        overflow-y: auto;
+    }
+
+    &__item {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-md);
+        text-decoration: none;
+        color: var(--color-text-muted);
+        font-family: var(--font-body);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        letter-spacing: var(--letter-spacing-wide);
+        transition: color var(--transition-base), background var(--transition-base);
+
+        &:hover {
+            color: var(--color-text-secondary);
+            background: rgba(196, 149, 32, 0.06);
+        }
+
+        &--active {
+            color: var(--color-gold-300);
+            background: rgba(196, 149, 32, 0.10);
+
+            &:hover {
+                color: var(--color-gold-300);
+                background: rgba(196, 149, 32, 0.14);
+            }
+        }
+    }
+
+    &__icon {
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+    }
+
+    &__label {
+        flex: 1;
+        text-transform: uppercase;
+    }
+
+    &__pip {
+        width: 4px;
+        height: 4px;
+        border-radius: var(--radius-full);
+        background: var(--color-gold-400);
+        box-shadow: var(--shadow-gold-sm);
+    }
+
+    &__footer {
+        padding: var(--space-4) var(--space-6) 0;
+        border-top: 1px solid var(--color-border-subtle);
+        margin-top: auto;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    &__footer-badge {
+        display: inline-flex;
+        align-self: flex-start;
+        padding: 2px var(--space-3);
+        border-radius: var(--radius-full);
+        background: rgba(196, 149, 32, 0.15);
+        border: 1px solid var(--color-border);
+        font-family: var(--font-body);
+        font-size: 9px;
+        font-weight: var(--font-weight-medium);
+        letter-spacing: var(--letter-spacing-widest);
+        text-transform: uppercase;
+        color: var(--color-gold-300);
+    }
+
+    &__footer-text {
+        font-family: var(--font-body);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-wide);
+        color: var(--color-text-muted);
+        text-transform: uppercase;
+    }
+}
+
+// Foot nav hidden on desktop
+.admin-foot-nav {
+    display: none;
+}
+
+// ── Mobile ──────────────────────────────────────────────────────────────────
+@media (max-width: 768px) {
+    .admin-side-nav {
+        display: none;
+    }
+
+    .admin-foot-nav {
+        display: block;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--color-navy-950);
+        border-top: 1px solid var(--color-border);
+        z-index: var(--z-sticky);
+        padding-bottom: env(safe-area-inset-bottom);
+        overflow-x: auto;
+
+        &__list {
+            list-style: none;
+            display: flex;
+            align-items: stretch;
+            min-width: max-content;
+            width: 100%;
+        }
+
+        &__item {
+            flex: 1;
+            min-width: 60px;
+        }
+
+        &__link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: var(--space-3) var(--space-2);
+            text-decoration: none;
+            color: var(--color-text-muted);
+            transition: color var(--transition-base);
+
+            &:hover {
+                color: var(--color-text-secondary);
+            }
+
+            &--active {
+                color: var(--color-gold-300);
+            }
+        }
+
+        &__icon {
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+
+        &__label {
+            font-family: var(--font-body);
+            font-size: 8px;
+            font-weight: var(--font-weight-medium);
+            letter-spacing: var(--letter-spacing-wider);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+    }
+}
+
+
+// ── Admin Layout ─────────────────────────────────────────────────────────────
+// @styles/admin/_layout.scss
+
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+    background: var(--color-bg-base);
+
+    &__main {
+        flex: 1;
+        margin-left: var(--sidebar-width);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--gradient-bg);
+    }
+
+    // Subtle top rule to distinguish admin from user area
+    &__topbar {
+        height: 3px;
+        background: linear-gradient(90deg,
+                var(--color-gold-shadow),
+                var(--color-gold-mid) 40%,
+                var(--color-gold-shine) 50%,
+                var(--color-gold-mid) 60%,
+                var(--color-gold-shadow));
+        flex-shrink: 0;
+    }
+
+    &__content {
+        flex: 1;
+        padding: var(--space-8);
+        max-width: var(--container-2xl);
+        width: 100%;
+        margin: 0 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-layout {
+        &__main {
+            margin-left: 0;
+            padding-bottom: calc(64px + env(safe-area-inset-bottom));
+        }
+
+        &__content {
+            padding: var(--space-6) var(--space-4);
+        }
+    }
+}
