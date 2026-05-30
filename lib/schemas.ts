@@ -27,3 +27,21 @@ export const ResetPasswordSchema = z.object({
     code: z.string().length(6),
     newPassword: z.string().min(8, "New password must match target length criteria (8+ chars)."),
 });
+
+const LoanApplicationSchema = z.object({
+    type: z.enum(["PERSONAL", "MORTGAGE", "AUTO", "BUSINESS", "INVESTMENT", "LINE_OF_CREDIT"] as const, {
+        message: "Select a valid loan type.",
+    }),
+    principalAmount: z.coerce
+        .number({ message: "Enter a valid amount." })
+        .min(1000, "Minimum loan amount is $1,000.")
+        .max(10_000_000, "Maximum loan amount is $10,000,000."),
+    termMonths: z.coerce
+        .number({ message: "Select a repayment term." })
+        .int()
+        .min(6, "Minimum term is 6 months.")
+        .max(360, "Maximum term is 30 years."),
+    purpose: z.string().min(5, "Describe the purpose of the loan (min 5 characters)."),
+    collateral: z.string().optional(),
+    notes: z.string().optional(),
+})

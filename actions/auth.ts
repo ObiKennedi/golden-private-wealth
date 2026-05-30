@@ -30,10 +30,9 @@ async function createSessionToken(userId: string, role: string) {
     });
 }
 
-// Helper utility to match and validate active tokens
 async function validateAndBurnOtp(email: string, code: string, type: any) {
     const user = await prisma.user.findUnique({ where: { email }, include: { otps: true } });
-    if (!user) return { success: false, msg: "Invalid parameter data." };
+    if (!user) return { success: false, msg: "No account was found with that email address." };
 
     const hashedInbound = crypto.createHash("sha256").update(code).digest("hex");
     const validOtp = await prisma.oneTimePassword.findFirst({
@@ -46,7 +45,7 @@ async function validateAndBurnOtp(email: string, code: string, type: any) {
         }
     });
 
-    if (!validOtp) return { success: false, msg: "Token validation rejected or expired." };
+    if (!validOtp) return { success: false, msg: "That code is invalid or has expired. Please request a new one." };
 
     await prisma.oneTimePassword.update({
         where: { id: validOtp.id },
@@ -56,8 +55,13 @@ async function validateAndBurnOtp(email: string, code: string, type: any) {
     return { success: true, user };
 }
 
+function generateAccountNumber(): string {
+    const digits = crypto.randomInt(1000000000, 9999999999).toString();
+    return `GPW${digits}`;
+}
+
 // ==========================================
-// 1. REGISTRATION DISPATCH ACTION
+// 1. REGISTRATION
 // ==========================================
 export async function signUpAction(prevState: any, formData: FormData) {
     const validated = SignUpSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -67,11 +71,19 @@ export async function signUpAction(prevState: any, formData: FormData) {
 
     try {
         const activeCheck = await prisma.user.findUnique({ where: { email } });
-        if (activeCheck) return { globalError: "Identity architecture already assigned to this profile." };
+        if (activeCheck) return { globalError: "An account already exists with that email address." };
 
         const passwordHash = await bcrypt.hash(password, 12);
+
+        let accountNumber = generateAccountNumber();
+        let collision = await prisma.user.findUnique({ where: { accountNumber } });
+        while (collision) {
+            accountNumber = generateAccountNumber();
+            collision = await prisma.user.findUnique({ where: { accountNumber } });
+        }
+
         const user = await prisma.user.create({
-            data: { fullName, email, passwordHash, ssnEncrypted: ssn }
+            data: { fullName, email, passwordHash, ssnEncrypted: ssn, accountNumber }
         });
 
         const token = generateAndHashOtp();
@@ -85,15 +97,17 @@ export async function signUpAction(prevState: any, formData: FormData) {
         });
 
         await sendVerificationEmail(user.email, token.raw, "EMAIL_VERIFICATION");
-    } catch {
-        return { globalError: "Infrastructure runtime allocation fault." };
+    } catch (err: any) {
+        console.error("[signUpAction]", err);
+        if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
+        return { globalError: "Something went wrong while creating your account. Please try again." };
     }
 
     redirect(`/verify-email?target=${encodeURIComponent(email)}`);
 }
 
 // ==========================================
-// 2. REGISTRATION EMAIL VERIFICATION
+// 2. EMAIL VERIFICATION
 // ==========================================
 export async function verifyEmailAction(prevState: any, formData: FormData) {
     const validated = VerifyOtpSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -111,15 +125,16 @@ export async function verifyEmailAction(prevState: any, formData: FormData) {
         });
 
         await createSessionToken(outcome.user!.id, outcome.user!.role);
-    } catch {
-        return { globalError: "Verification state configuration breakdown." };
+    } catch (err: any) {
+        if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
+        return { globalError: "We couldn't verify your email. Please try again or request a new code." };
     }
 
     redirect("/dashboard");
 }
 
 // ==========================================
-// 3. SECURE AUTHENTICATION LOGIN ACTION
+// 3. LOGIN
 // ==========================================
 export async function loginAction(prevState: any, formData: FormData) {
     const validated = LoginSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -129,13 +144,12 @@ export async function loginAction(prevState: any, formData: FormData) {
 
     try {
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) return { globalError: "Access signature validation failed." };
+        if (!user) return { globalError: "The email or password you entered is incorrect." };
 
         const matching = await bcrypt.compare(password, user.passwordHash);
-        if (!matching) return { globalError: "Access signature validation failed." };
+        if (!matching) return { globalError: "The email or password you entered is incorrect." };
 
         if (!user.emailVerified) {
-            // Re-trigger verification if profile confirmation is pending
             const token = generateAndHashOtp();
             await prisma.oneTimePassword.create({
                 data: {
@@ -149,47 +163,17 @@ export async function loginAction(prevState: any, formData: FormData) {
             redirect(`/verify-email?target=${encodeURIComponent(email)}`);
         }
 
-        // Secondary structural login safety check option
-        const token = generateAndHashOtp();
-        await prisma.oneTimePassword.create({
-            data: {
-                code: token.hashed,
-                type: "LOGIN_OTP",
-                expiresAt: new Date(Date.now() + 1000 * 60 * 5),
-                userId: user.id
-            }
-        });
-
-        await sendVerificationEmail(user.email, token.raw, "LOGIN_OTP");
+        await createSessionToken(user.id, user.role);
     } catch (err: any) {
-        if (err.message && err.message.includes("NEXT_REDIRECT")) throw err;
-        return { globalError: "Execution pipeline handling anomaly." };
-    }
-
-    redirect(`/verify-login?target=${encodeURIComponent(email)}`);
-}
-
-// Secondary verification execution processing action for step-2 login verification
-export async function completeLoginOtpAction(prevState: any, formData: FormData) {
-    const validated = VerifyOtpSchema.safeParse(Object.fromEntries(formData.entries()));
-    if (!validated.success) return { error: validated.error.flatten().fieldErrors };
-
-    const { email, code } = validated.data;
-
-    try {
-        const check = await validateAndBurnOtp(email, code, "LOGIN_OTP");
-        if (!check.success) return { globalError: check.msg };
-
-        await createSessionToken(check.user!.id, check.user!.role);
-    } catch {
-        return { globalError: "Verification credential check failed." };
+        if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
+        return { globalError: "Something went wrong while signing you in. Please try again." };
     }
 
     redirect("/dashboard");
 }
 
 // ==========================================
-// 4. FORGOT PASSWORD DISPATCH ACTION
+// 4. FORGOT PASSWORD
 // ==========================================
 export async function forgotPasswordAction(prevState: any, formData: FormData) {
     const validated = ForgotPasswordSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -199,7 +183,7 @@ export async function forgotPasswordAction(prevState: any, formData: FormData) {
 
     try {
         const user = await prisma.user.findUnique({ where: { email } });
-        // Keep user presence ambiguous for security reasons to mitigate enumeration scanning
+        // Stay ambiguous — don't reveal whether the email exists
         if (!user) return { messageDispatch: true };
 
         const token = generateAndHashOtp();
@@ -213,13 +197,17 @@ export async function forgotPasswordAction(prevState: any, formData: FormData) {
         });
 
         await sendVerificationEmail(user.email, token.raw, "PASSWORD_RESET");
-    } catch {
-        return { globalError: "Recovery pipeline failure." };
+    } catch (err: any) {
+        if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
+        return { globalError: "We couldn't send a reset code right now. Please try again shortly." };
     }
 
-    redirect(`/reset-password?target=${encodeURIComponent(email)}`);
+    redirect("/reset-password");
 }
 
+// ==========================================
+// 5. RESET PASSWORD
+// ==========================================
 export async function resetPasswordAction(prevState: any, formData: FormData) {
     const validated = ResetPasswordSchema.safeParse(Object.fromEntries(formData.entries()));
     if (!validated.success) return { error: validated.error.flatten().fieldErrors };
@@ -235,36 +223,33 @@ export async function resetPasswordAction(prevState: any, formData: FormData) {
             where: { id: result.user!.id },
             data: { passwordHash: targetHash }
         });
-    } catch {
-        return { globalError: "Failed to update record profiles." };
+    } catch (err: any) {
+        if (err?.digest?.startsWith("NEXT_REDIRECT")) throw err;
+        return { globalError: "We couldn't update your password. Please try again or request a new code." };
     }
 
     redirect("/login?reset=success");
 }
 
 // ==========================================
-// 5. RESEND OTP DISPATCH ACTION
+// 6. RESEND OTP
 // ==========================================
 export async function resendOtpAction(prevState: any, formData: FormData) {
     const email = formData.get("email") as string;
     const purpose = formData.get("purpose") as string;
 
-    if (!email || !purpose) return { globalError: "Invalid dispatch parameters." };
+    if (!email || !purpose) return { globalError: "Something went wrong. Please refresh and try again." };
 
-    // Validate purpose is a known OTP type
     const allowedTypes = ["EMAIL_VERIFICATION", "LOGIN_OTP", "PASSWORD_RESET"] as const;
     type OtpType = typeof allowedTypes[number];
     if (!allowedTypes.includes(purpose as OtpType)) {
-        return { globalError: "Unrecognized token classification." };
+        return { globalError: "Something went wrong. Please refresh and try again." };
     }
 
     try {
         const user = await prisma.user.findUnique({ where: { email } });
-        // Stay ambiguous — don't reveal whether the email exists
-        if (!user) return { success: true };
+        if (!user) return { success: true }; // stay ambiguous
 
-        // Rate-limit: block if an unexpired, unused token already exists
-        // issued within the last 60 seconds
         const recentOtp = await prisma.oneTimePassword.findFirst({
             where: {
                 userId: user.id,
@@ -276,20 +261,14 @@ export async function resendOtpAction(prevState: any, formData: FormData) {
         });
 
         if (recentOtp) {
-            return { globalError: "A code was dispatched recently. Please wait before requesting another." };
+            return { globalError: "A code was just sent. Please wait a minute before requesting another." };
         }
 
-        // Invalidate all prior unused tokens of this type for this user
         await prisma.oneTimePassword.updateMany({
-            where: {
-                userId: user.id,
-                type: purpose as OtpType,
-                used: false,
-            },
+            where: { userId: user.id, type: purpose as OtpType, used: false },
             data: { used: true },
         });
 
-        // Issue fresh token
         const token = generateAndHashOtp();
         await prisma.oneTimePassword.create({
             data: {
@@ -302,7 +281,7 @@ export async function resendOtpAction(prevState: any, formData: FormData) {
 
         await sendVerificationEmail(user.email, token.raw, purpose as OtpType);
     } catch {
-        return { globalError: "Dispatch pipeline failure. Try again shortly." };
+        return { globalError: "We couldn't send a new code right now. Please try again shortly." };
     }
 
     return { success: true };

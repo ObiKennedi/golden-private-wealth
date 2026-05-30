@@ -1,0 +1,453 @@
+// @styles/user/_assets.scss
+
+.assetspage {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    padding-bottom: var(--space-16);
+
+    // ── Header ────────────────────────────────────────────────
+    &__header {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: var(--space-6);
+        padding-bottom: var(--space-6);
+        border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    &__pretitle {
+        font-family: var(--font-body);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-widest);
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+        margin-bottom: var(--space-1);
+    }
+
+    &__title {
+        font-family: var(--font-display);
+        font-size: var(--font-size-3xl);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-tight);
+        color: var(--color-text-primary);
+        line-height: var(--line-height-tight);
+    }
+
+    &__networth {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--space-1);
+    }
+
+    &__networth-label {
+        font-family: var(--font-body);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-wider);
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+    }
+
+    &__networth-amount {
+        font-family: var(--font-display);
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-tight);
+        line-height: 1;
+
+        &.pos {
+            color: var(--color-gold-300);
+        }
+
+        &.neg {
+            color: #f87171;
+        }
+    }
+
+    // ── Summary Row ───────────────────────────────────────────
+    &__summary-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--space-4);
+    }
+
+    &__summary-card {
+        background: var(--color-navy-800);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4) var(--space-5);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    &__summary-label {
+        font-family: var(--font-body);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-wider);
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+    }
+
+    &__summary-amount {
+        font-family: var(--font-display);
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-tight);
+        color: var(--color-text-secondary);
+
+        &--gold {
+            color: var(--color-gold-300);
+        }
+
+        &--red {
+            color: #f87171;
+        }
+    }
+
+    // ── Sections ──────────────────────────────────────────────
+    &__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+    }
+
+    &__section-title {
+        font-family: var(--font-body);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+        letter-spacing: var(--letter-spacing-widest);
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+    }
+
+    &__empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-10) 0;
+        color: var(--color-text-muted);
+
+        p {
+            font-family: var(--font-body);
+            font-size: var(--font-size-sm);
+            letter-spacing: var(--letter-spacing-wide);
+        }
+    }
+
+    // ── Account Cards ─────────────────────────────────────────
+    &__accounts {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: var(--space-4);
+    }
+
+    &__acct-card {
+        background: var(--color-navy-800);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-xl);
+        padding: var(--space-6);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-5);
+        position: relative;
+        overflow: hidden;
+        transition: border-color var(--transition-base), transform var(--transition-base);
+
+        &::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: var(--space-6);
+            right: var(--space-6);
+            height: 1px;
+        }
+
+        &:hover {
+            transform: translateY(-2px);
+            border-color: var(--color-border-strong);
+        }
+
+        // Per-type top accent line
+        &.acct--checking::before {
+            background: linear-gradient(90deg, transparent, var(--color-gold-600), var(--color-gold-shine), var(--color-gold-600), transparent);
+        }
+
+        &.acct--savings::before {
+            background: linear-gradient(90deg, transparent, #34d399, #6ee7b7, #34d399, transparent);
+        }
+
+        &.acct--investment::before {
+            background: linear-gradient(90deg, transparent, #60a5fa, #93c5fd, #60a5fa, transparent);
+        }
+
+        &.acct--credit::before {
+            background: linear-gradient(90deg, transparent, #f87171, #fca5a5, #f87171, transparent);
+        }
+    }
+
+    &__acct-top {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+    }
+
+    &__acct-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        .acct--checking & {
+            background: rgba(196, 149, 32, 0.12);
+            color: var(--color-gold-400);
+        }
+
+        .acct--savings & {
+            background: rgba(52, 211, 153, 0.12);
+            color: #34d399;
+        }
+
+        .acct--investment & {
+            background: rgba(96, 165, 250, 0.12);
+            color: #60a5fa;
+        }
+
+        .acct--credit & {
+            background: rgba(248, 113, 113, 0.12);
+            color: #f87171;
+        }
+    }
+
+    &__acct-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    &__acct-type {
+        font-family: var(--font-body);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+    }
+
+    &__acct-number {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+        letter-spacing: var(--letter-spacing-wide);
+    }
+
+    &__acct-bottom {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+    }
+
+    &__acct-balance-label {
+        font-family: var(--font-body);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-wider);
+        text-transform: uppercase;
+        color: var(--color-text-muted);
+    }
+
+    &__acct-balance {
+        font-family: var(--font-display);
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-tight);
+        color: var(--color-text-primary);
+        line-height: 1.1;
+    }
+
+    &__acct-currency {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+        letter-spacing: var(--letter-spacing-wider);
+    }
+
+    &__acct-since {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+        letter-spacing: var(--letter-spacing-wide);
+        text-transform: uppercase;
+        opacity: 0.6;
+    }
+
+    // ── Loan List ─────────────────────────────────────────────
+    &__loan-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    &__loan-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        padding: var(--space-4);
+        border-radius: var(--radius-md);
+        transition: background var(--transition-base);
+
+        &:hover {
+            background: rgba(196, 149, 32, 0.04);
+        }
+    }
+
+    &__loan-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        background: rgba(196, 149, 32, 0.10);
+        color: var(--color-gold-400);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    &__loan-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    &__loan-type {
+        font-family: var(--font-body);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+        text-transform: capitalize;
+    }
+
+    &__loan-purpose {
+        font-family: var(--font-body);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &__loan-meta {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+        letter-spacing: var(--letter-spacing-wide);
+        text-transform: uppercase;
+    }
+
+    &__loan-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: var(--space-1);
+        flex-shrink: 0;
+    }
+
+    &__loan-amount {
+        font-family: var(--font-display);
+        font-size: var(--font-size-md);
+        font-weight: var(--font-weight-medium);
+        letter-spacing: var(--letter-spacing-tight);
+        color: #f87171;
+    }
+
+    &__loan-monthly {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-muted);
+        letter-spacing: var(--letter-spacing-wide);
+    }
+
+    &__loan-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px var(--space-2);
+        border-radius: var(--radius-full);
+        font-family: var(--font-body);
+        font-size: 9px;
+        font-weight: var(--font-weight-medium);
+        letter-spacing: var(--letter-spacing-wider);
+        text-transform: uppercase;
+
+        &.lstatus--pending {
+            background: rgba(196, 149, 32, 0.12);
+            color: var(--color-gold-300);
+        }
+
+        &.lstatus--review {
+            background: rgba(100, 140, 220, 0.12);
+            color: #93c5fd;
+        }
+
+        &.lstatus--approved {
+            background: rgba(26, 160, 100, 0.12);
+            color: #4ade80;
+        }
+
+        &.lstatus--active {
+            background: rgba(26, 160, 100, 0.18);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.3);
+        }
+
+        &.lstatus--rejected {
+            background: rgba(196, 80, 60, 0.12);
+            color: #f87171;
+        }
+
+        &.lstatus--closed {
+            background: rgba(100, 100, 120, 0.12);
+            color: var(--color-text-muted);
+        }
+    }
+
+    // ── Mobile ────────────────────────────────────────────────
+    @media (max-width: 768px) {
+        gap: var(--space-6);
+
+        &__header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        &__title {
+            font-size: var(--font-size-2xl);
+        }
+
+        &__networth {
+            align-items: flex-start;
+        }
+
+        &__summary-row {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        &__accounts {
+            grid-template-columns: 1fr;
+        }
+
+        &__loan-meta {
+            display: none;
+        }
+    }
+}

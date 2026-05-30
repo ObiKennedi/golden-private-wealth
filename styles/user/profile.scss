@@ -1,0 +1,401 @@
+// ============================================================
+//  GOLDEN PRIVATE WEALTH BANK — Profile Page
+// ============================================================
+
+.profilepage {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: var(--space-16);
+}
+
+// ── Root container ────────────────────────────────────────────
+.profile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+    max-width: 680px;
+}
+
+// ── Header ────────────────────────────────────────────────────
+.profile__header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.profile__pretitle {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-light);
+    letter-spacing: var(--letter-spacing-widest);
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-1);
+}
+
+.profile__title {
+    font-family: var(--font-display);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-light);
+    letter-spacing: var(--letter-spacing-tight);
+    color: var(--color-text-primary);
+    line-height: var(--line-height-tight);
+}
+
+// ── Sign out button ───────────────────────────────────────────
+.profile__signout {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-5);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    color: var(--color-text-muted);
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--letter-spacing-wide);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all var(--transition-base);
+
+    &:hover:not(:disabled) {
+        border-color: rgba(248, 113, 113, 0.40);
+        color: #f87171;
+        background: rgba(248, 113, 113, 0.06);
+    }
+
+    &:disabled {
+        opacity: 0.50;
+        cursor: not-allowed;
+    }
+}
+
+// ── Identity card ─────────────────────────────────────────────
+.profile__card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    padding: var(--space-6) var(--space-8);
+    background: var(--color-navy-800);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    position: relative;
+    overflow: hidden;
+
+    // Gold shimmer top edge
+    &::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: var(--space-8);
+        right: var(--space-8);
+        height: 1px;
+        background: linear-gradient(90deg,
+                transparent,
+                var(--color-gold-600) 30%,
+                var(--color-gold-shine) 50%,
+                var(--color-gold-600) 70%,
+                transparent);
+    }
+}
+
+// ── Avatar ────────────────────────────────────────────────────
+.profile__avatar-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.profile__avatar {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    background: rgba(196, 149, 32, 0.10);
+    cursor: pointer;
+    overflow: hidden;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color var(--transition-base);
+
+    &:hover:not(:disabled) {
+        border-color: var(--color-gold-500);
+
+        .profile__avatar-overlay {
+            opacity: 1;
+        }
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+    }
+}
+
+.profile__avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.profile__avatar-initials {
+    font-family: var(--font-display);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-light);
+    color: var(--color-gold-400);
+    letter-spacing: var(--letter-spacing-wide);
+    user-select: none;
+}
+
+.profile__avatar-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(13, 17, 32, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-gold-300);
+    opacity: 0;
+    transition: opacity var(--transition-base);
+}
+
+.profile__avatar-spinner {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid rgba(196, 149, 32, 0.25);
+    border-top-color: var(--color-gold-400);
+    border-radius: 50%;
+    animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.profile__file-input {
+    display: none;
+}
+
+.profile__upload-error {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: #f87171;
+    text-align: center;
+    max-width: 90px;
+    line-height: var(--line-height-snug);
+}
+
+// ── Identity text ─────────────────────────────────────────────
+.profile__identity {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.profile__identity-name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+
+    h2 {
+        font-family: var(--font-display);
+        font-size: var(--font-size-2xl);
+        font-weight: var(--font-weight-light);
+        letter-spacing: var(--letter-spacing-tight);
+        color: var(--color-text-primary);
+        margin: 0;
+    }
+}
+
+.profile__role {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px var(--space-2);
+    border-radius: var(--radius-full);
+    background: rgba(196, 149, 32, 0.10);
+    border: 1px solid rgba(196, 149, 32, 0.20);
+    color: var(--color-gold-400);
+    font-family: var(--font-body);
+    font-size: 9px;
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--letter-spacing-wider);
+    text-transform: uppercase;
+
+    &--admin {
+        background: rgba(196, 149, 32, 0.16);
+        border-color: rgba(196, 149, 32, 0.40);
+        color: var(--color-gold-300);
+    }
+}
+
+.profile__member-since {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    letter-spacing: var(--letter-spacing-wide);
+}
+
+// ── Detail fields ─────────────────────────────────────────────
+.profile__fields {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.profile__field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-md);
+    transition: background var(--transition-base);
+
+    &:hover {
+        background: rgba(196, 149, 32, 0.04);
+    }
+}
+
+.profile__field-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+    min-width: 160px;
+
+    span {
+        font-family: var(--font-body);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+        letter-spacing: var(--letter-spacing-wider);
+        text-transform: uppercase;
+    }
+}
+
+.profile__field-value-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    min-width: 0;
+}
+
+.profile__field-value {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+    text-align: right;
+    word-break: break-all;
+
+    &--mono {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-xs);
+        letter-spacing: var(--letter-spacing-wide);
+        color: var(--color-text-secondary);
+    }
+}
+
+// ── Badges ────────────────────────────────────────────────────
+.profile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px var(--space-2);
+    border-radius: var(--radius-full);
+    font-family: var(--font-body);
+    font-size: 9px;
+    font-weight: var(--font-weight-medium);
+    letter-spacing: var(--letter-spacing-wider);
+    text-transform: uppercase;
+    flex-shrink: 0;
+
+    &--verified {
+        background: rgba(26, 160, 100, 0.12);
+        color: #4ade80;
+        border: 1px solid rgba(74, 222, 128, 0.20);
+    }
+
+    &--unverified {
+        background: rgba(196, 149, 32, 0.10);
+        color: var(--color-gold-300);
+        border: 1px solid rgba(196, 149, 32, 0.20);
+    }
+}
+
+// ── Security notice ───────────────────────────────────────────
+.profile__notice {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    font-style: italic;
+    line-height: var(--line-height-relaxed);
+    padding: var(--space-4) var(--space-5);
+    border-left: 2px solid rgba(196, 149, 32, 0.20);
+
+    a {
+        color: var(--color-gold-400);
+        text-decoration: none;
+        transition: color var(--transition-base);
+
+        &:hover {
+            color: var(--color-gold-200);
+        }
+    }
+}
+
+// ── Responsive ────────────────────────────────────────────────
+@media (max-width: 640px) {
+    .profile__card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: var(--space-6);
+    }
+
+    .profile__avatar-wrap {
+        align-items: flex-start;
+    }
+
+    .profile__upload-error {
+        max-width: 100%;
+        text-align: left;
+    }
+
+    .profile__title {
+        font-size: var(--font-size-2xl);
+    }
+
+    .profile__field {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
+
+    .profile__field-label {
+        min-width: unset;
+    }
+
+    .profile__field-value-row {
+        justify-content: flex-start;
+    }
+
+    .profile__field-value {
+        text-align: left;
+    }
+}
