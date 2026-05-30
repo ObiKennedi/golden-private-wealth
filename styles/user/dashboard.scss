@@ -241,6 +241,7 @@
     &__tx-item {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: var(--space-4);
         padding: var(--space-4);
         border-radius: var(--radius-md);
