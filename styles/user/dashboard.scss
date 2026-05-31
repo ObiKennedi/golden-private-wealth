@@ -89,6 +89,21 @@
         }
     }
 
+    &__balance-toggle {
+        position: absolute;
+        top: var(--space-6);
+        right: var(--space-8);
+        background: transparent;
+        border: none;
+        color: var(--color-text-muted);
+        cursor: pointer;
+        transition: color var(--transition-base);
+
+        &:hover {
+            color: var(--color-gold-400);
+        }
+    }
+
     &__balance-primary {
         display: flex;
         flex-direction: column;
@@ -223,6 +238,31 @@
         color: var(--color-text-muted);
     }
 
+    &__section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--color-border-subtle);
+        padding-bottom: var(--space-2);
+        margin-bottom: var(--space-1);
+    }
+
+    &__view-all {
+        font-family: var(--font-body);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+        letter-spacing: var(--letter-spacing-wider);
+        text-transform: uppercase;
+        color: var(--color-gold-400);
+        text-decoration: none;
+        transition: color var(--transition-base);
+
+        &:hover {
+            color: var(--color-gold-300);
+            text-decoration: underline;
+        }
+    }
+
     &__empty {
         font-family: var(--font-body);
         font-size: var(--font-size-sm);
@@ -317,6 +357,10 @@
 
         &--debit {
             color: #f87171;
+        }
+
+        &--neutral {
+            color: var(--color-gold-300);
         }
     }
 

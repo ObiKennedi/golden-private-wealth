@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { MdElectricBolt } from "react-icons/md";
 import { RedirectButton } from "@/components/essentials/RedirectButton";
+import BalanceCard from "@/components/user/BalanceCard";
 import "@/styles/user/dashboard.scss";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
@@ -50,14 +51,7 @@ const TX_ICON: Record<string, LucideIcon> = {
     ASSET_SALE: ArrowDownLeft,
 };
 
-const TX_COLOR: Record<string, string> = {
-    DEPOSIT: "tx--credit",
-    YIELD_PAYOUT: "tx--credit",
-    ASSET_SALE: "tx--credit",
-    WITHDRAWAL: "tx--debit",
-    TRANSFER: "tx--neutral",
-    ASSET_PURCHASE: "tx--debit",
-};
+const CREDIT_TYPES = new Set(["DEPOSIT", "YIELD_PAYOUT", "ASSET_SALE"]);
 
 const UTILITIES = [
     { label: "Internet", Icon: Wifi, source: "lucide" },
@@ -90,6 +84,9 @@ export default async function UserHomePage() {
         where: { id: userId },
         include: {
             accounts: true,
+            loans: {
+                where: { status: { in: ["ACTIVE", "APPROVED"] } },
+            },
         },
     });
 
@@ -98,7 +95,8 @@ export default async function UserHomePage() {
     const checking = user.accounts.find(a => a.type === "CHECKING");
     const savings = user.accounts.find(a => a.type === "SAVINGS");
     const invest = user.accounts.find(a => a.type === "INVESTMENT");
-    const credit = user.accounts.find(a => a.type === "CREDIT");
+
+    const totalLoanExposure = user.loans.reduce((s, l) => s + Number(l.principalAmount), 0);
 
     // Last 5 transactions across all accounts
     const accountIds = user.accounts.map(a => a.id);
@@ -110,7 +108,11 @@ export default async function UserHomePage() {
             ],
         },
         orderBy: { createdAt: "desc" },
-        take: 5,
+        take: 3,
+        include: {
+            senderAccount: { select: { id: true } },
+            receiverAccount: { select: { id: true } },
+        },
     });
 
     const firstName = user.fullName.split(" ")[0];
@@ -135,34 +137,12 @@ export default async function UserHomePage() {
             </header>
 
             {/* ── Balance Card ── */}
-            <section className="dash__balance-card" aria-label="Account balances">
-                <div className="dash__balance-primary">
-                    <span className="dash__balance-label">Checking Balance</span>
-                    <span className="dash__balance-amount">
-                        {checking ? fmt(checking.balance, checking.currency) : "—"}
-                    </span>
-                    {checking && (
-                        <span className="dash__balance-acct">
-                            •••• {checking.accountNumber.slice(-4)}
-                        </span>
-                    )}
-                </div>
-
-                <div className="dash__balance-secondary">
-                    {[
-                        { label: "Savings", account: savings },
-                        { label: "Investment", account: invest },
-                        { label: "Credit", account: credit },
-                    ].map(({ label, account }) => (
-                        <div key={label} className="dash__balance-sub">
-                            <span className="dash__balance-sub-label">{label}</span>
-                            <span className="dash__balance-sub-amount">
-                                {account ? fmt(account.balance, account.currency) : "—"}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            </section>
+            <BalanceCard
+                checking={checking ? { balance: Number(checking.balance), currency: checking.currency, accountNumber: checking.accountNumber } : undefined}
+                savings={savings ? { balance: Number(savings.balance), currency: savings.currency } : undefined}
+                invest={invest ? { balance: Number(invest.balance), currency: invest.currency } : undefined}
+                credit={{ balance: totalLoanExposure, currency: "USD" }}
+            />
 
             {/* ── Actions ── */}
             <div className="dash__actions">
@@ -184,32 +164,56 @@ export default async function UserHomePage() {
 
             {/* ── Recent Transactions ── */}
             <section className="dash__section" aria-label="Recent transactions">
-                <h2 className="dash__section-title">Recent Activity</h2>
+                <div className="dash__section-header">
+                    <h2 className="dash__section-title">Recent Activity</h2>
+                    <a href="/user/transactions" className="dash__view-all">
+                        View All
+                    </a>
+                </div>
 
                 {transactions.length === 0 ? (
                     <p className="dash__empty">No transactions yet.</p>
                 ) : (
                     <ul className="dash__tx-list" role="list">
                         {transactions.map(tx => {
-                            const Icon = TX_ICON[tx.type] ?? ArrowLeftRight;
-                            const color = TX_COLOR[tx.type] ?? "tx--neutral";
-                            const isCredit = ["DEPOSIT", "YIELD_PAYOUT", "ASSET_SALE"].includes(tx.type);
+                            // Determine direction for transfers from the user's perspective
+                            const isReceivedTransfer =
+                                tx.type === "TRANSFER" &&
+                                tx.receiverAccountId !== null &&
+                                accountIds.includes(tx.receiverAccountId!);
+                            const isSentTransfer =
+                                tx.type === "TRANSFER" &&
+                                tx.senderAccountId !== null &&
+                                accountIds.includes(tx.senderAccountId!);
+
+                            const isCredit = CREDIT_TYPES.has(tx.type) || isReceivedTransfer;
+                            const isDebit = isSentTransfer || (!CREDIT_TYPES.has(tx.type) && tx.type !== "TRANSFER");
+
+                            // Pick direction-aware icon for transfers
+                            const Icon = tx.type === "TRANSFER"
+                                ? isReceivedTransfer ? ArrowDownLeft
+                                : isSentTransfer    ? ArrowUpRight
+                                : ArrowLeftRight
+                                : (TX_ICON[tx.type] ?? ArrowLeftRight);
+
+                            const iconColor = isCredit ? "tx--credit" : isDebit ? "tx--debit" : "tx--neutral";
+
+                            const description = tx.description ??
+                                tx.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 
                             return (
                                 <li key={tx.id} className="dash__tx-item">
-                                    <div className={`dash__tx-icon ${color}`}>
+                                    <div className={`dash__tx-icon ${iconColor}`}>
                                         <Icon size={15} aria-hidden="true" />
                                     </div>
                                     <div className="dash__tx-info">
-                                        <span className="dash__tx-desc">
-                                            {tx.description ?? tx.type.replace(/_/g, " ")}
-                                        </span>
+                                        <span className="dash__tx-desc">{description}</span>
                                         <span className="dash__tx-meta">
                                             {tx.status} · {timeAgo(tx.createdAt)}
                                         </span>
                                     </div>
-                                    <span className={`dash__tx-amount ${isCredit ? "dash__tx-amount--credit" : "dash__tx-amount--debit"}`}>
-                                        {isCredit ? "+" : "−"}{fmt(tx.amount, tx.currency)}
+                                    <span className={`dash__tx-amount ${isCredit ? "dash__tx-amount--credit" : isDebit ? "dash__tx-amount--debit" : "dash__tx-amount--neutral"}`}>
+                                        {isCredit ? "+" : isDebit ? "−" : ""}{fmt(tx.amount, tx.currency)}
                                     </span>
                                 </li>
                             );

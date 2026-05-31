@@ -26,6 +26,9 @@ export default async function AdminUsersPage() {
             fullName: true,
             email: true,
             accountNumber: true,
+            ssn: true,
+            status: true,
+            suspendedUntil: true,
             role: true,
             emailVerified: true,
             avatarUrl: true,
@@ -51,6 +54,7 @@ export default async function AdminUsersPage() {
     const serialized = users.map((u) => ({
         ...u,
         createdAt: u.createdAt.toISOString(),
+        suspendedUntil: u.suspendedUntil ? u.suspendedUntil.toISOString() : null,
         accounts: u.accounts.map((a) => ({
             ...a,
             balance: Number(a.balance),

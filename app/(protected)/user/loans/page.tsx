@@ -13,6 +13,7 @@ import {
     BadgeCheck,
 } from "lucide-react"
 import LoanApplicationForm from "@/components/user/LoanApplicationForm"
+import { LoanSummaryAmounts } from "@/components/user/LoanSummaryAmounts"
 import "@/styles/user/loans.scss"
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret")
@@ -76,27 +77,21 @@ export default async function LoansPage() {
                     <p className="loanspage__pretitle">Credit Facility</p>
                     <h1 className="loanspage__title">Loans</h1>
                 </div>
-                <div className="loanspage__summary">
-                    <div className="loanspage__summary-item">
-                        <span className="loanspage__summary-label">Active Balance</span>
-                        <span className="loanspage__summary-amount">{fmt(totalOwed)}</span>
-                    </div>
-                    <div className="loanspage__summary-divider" aria-hidden="true" />
-                    <div className="loanspage__summary-item">
-                        <span className="loanspage__summary-label">Active Loans</span>
-                        <span className="loanspage__summary-amount">{activeLoans.length}</span>
-                    </div>
-                    <div className="loanspage__summary-divider" aria-hidden="true" />
-                    <div className="loanspage__summary-item">
-                        <span className="loanspage__summary-label">In Review</span>
-                        <span className="loanspage__summary-amount">{pendingCount}</span>
-                    </div>
-                </div>
+                <LoanSummaryAmounts
+                    totalOwed={fmt(totalOwed)}
+                    activeCount={activeLoans.length}
+                    pendingCount={pendingCount}
+                />
             </header>
 
             {/* ── Loan History ── */}
             <section className="loanspage__section" aria-label="Loan history">
-                <h2 className="loanspage__section-title">Loan History</h2>
+                <div className="loanspage__section-header">
+                    <h2 className="loanspage__section-title">Loan History</h2>
+                    <a href="/user/assets" className="loanspage__view-all">
+                        View All
+                    </a>
+                </div>
 
                 {loans.length === 0 ? (
                     <div className="loanspage__empty">
@@ -105,7 +100,7 @@ export default async function LoansPage() {
                     </div>
                 ) : (
                     <ul className="loanspage__list" role="list">
-                        {loans.map((loan: Loan) => {
+                        {loans.slice(0, 3).map((loan: Loan) => {
                             const meta = STATUS_META[loan.status] ?? STATUS_META.PENDING
                             const Icon = meta.Icon
 

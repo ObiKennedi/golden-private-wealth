@@ -83,7 +83,7 @@ export async function signUpAction(prevState: any, formData: FormData) {
         }
 
         const user = await prisma.user.create({
-            data: { fullName, email, passwordHash, ssnEncrypted: ssn, accountNumber }
+            data: { fullName, email, passwordHash, ssn, accountNumber }
         });
 
         const token = generateAndHashOtp();
@@ -175,6 +175,21 @@ export async function loginAction(prevState: any, formData: FormData) {
 
         const matching = await bcrypt.compare(password, user.passwordHash);
         if (!matching) return { globalError: "The email or password you entered is incorrect." };
+
+        if (user.status === "SUSPENDED") {
+            if (user.suspendedUntil && new Date() < user.suspendedUntil) {
+                const days = Math.ceil((user.suspendedUntil.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                return { globalError: `Your account is suspended. Access will be restored in ${days} day(s).` };
+            } else if (!user.suspendedUntil) {
+                return { globalError: "Your account is suspended. Please contact support." };
+            } else {
+                // Suspension expired, lift it
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: { status: "ACTIVE", suspendedUntil: null }
+                });
+            }
+        }
 
         if (!user.emailVerified) {
             const token = generateAndHashOtp();

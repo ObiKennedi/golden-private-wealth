@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useState, useTransition, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronDown, Send, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react"
-import { submitTransferAction } from "@/actions/transfer"
+import { ChevronDown, Send, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle, Loader2, ShieldCheck } from "lucide-react"
+import { submitTransferAction, verifyInternalAccountAction } from "@/actions/transfer"
 
 // ── Bank list ─────────────────────────────────────────────────
 const BANKS = [
+    { group: "Internal", value: "GOLDEN_PRIVATE_WEALTH", label: "Golden Private Wealth Bank" },
     // ── Major US Banks ──
     { group: "US Commercial Banks", value: "JPMORGAN_CHASE", label: "JPMorgan Chase" },
     { group: "US Commercial Banks", value: "BANK_OF_AMERICA", label: "Bank of America" },
@@ -140,6 +141,53 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
     const [errors, setErrors] = useState<Partial<Record<keyof typeof fields, string>>>({})
     const [globalError, setGlobalError] = useState<string | null>(null)
 
+    // Internal account verification state
+    const [acctVerify, setAcctVerify] = useState<{
+        status: "idle" | "checking" | "valid" | "invalid"
+        message: string
+        holderName?: string
+        resolvedAccountNumber?: string
+    }>({ status: "idle", message: "" })
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    const isInternal = fields.recipientBank === "GOLDEN_PRIVATE_WEALTH"
+
+    // Debounced live verification when internal bank + account number changes
+    useEffect(() => {
+        if (!isInternal) {
+            setAcctVerify({ status: "idle", message: "" })
+            return
+        }
+        const num = fields.recipientAccountNumber.trim()
+        if (!num) {
+            setAcctVerify({ status: "idle", message: "" })
+            return
+        }
+        if (debounceRef.current) clearTimeout(debounceRef.current)
+        setAcctVerify({ status: "checking", message: "Verifying account…" })
+        debounceRef.current = setTimeout(async () => {
+            const result = await verifyInternalAccountAction(num)
+            if (result.valid) {
+                setAcctVerify({
+                    status: "valid",
+                    message: result.message ?? "",
+                    holderName: result.holderName,
+                    resolvedAccountNumber: result.resolvedAccountNumber,
+                })
+                // Auto-fill recipient name from verified account
+                if (result.holderName) {
+                    setFields(p => ({ ...p, recipientName: result.holderName! }))
+                }
+            } else {
+                setAcctVerify({ status: "invalid", message: result.message ?? "Account not found." })
+            }
+        }, 600)
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
+    }, [fields.recipientAccountNumber, isInternal])
+
+    // Modal state
+    const [modalData, setModalData] = useState<{ isVisible: boolean; isInternal: boolean; reference: string | null; amount: string; recipientName: string; bank: string } | null>(null)
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
         setFields((p) => ({ ...p, [name]: value }))
@@ -150,8 +198,12 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
 
     const validate = () => {
         const e: Partial<Record<keyof typeof fields, string>> = {}
+        // For internal transfers, block if account not verified
+        if (isInternal && acctVerify.status !== "valid") {
+            e.recipientAccountNumber = "Please enter a valid GPW account number and wait for verification."
+        }
         if (!fields.recipientName.trim()) e.recipientName = "Recipient name is required."
-        if (!fields.recipientAccountNumber.trim()) e.recipientAccountNumber = "Account number is required."
+        if (!fields.recipientAccountNumber.trim()) e.recipientAccountNumber = e.recipientAccountNumber || "Account number is required."
         if (!fields.recipientBank) e.recipientBank = "Please select a destination bank."
         const amt = parseFloat(fields.amount)
         if (!fields.amount || isNaN(amt)) e.amount = "Enter a valid amount."
@@ -169,6 +221,10 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
         startTransition(async () => {
             const fd = new FormData()
             Object.entries(fields).forEach(([k, v]) => fd.append(k, v))
+            // For internal transfers, override with the resolved (suffixed) account number
+            if (isInternal && acctVerify.resolvedAccountNumber) {
+                fd.set("recipientAccountNumber", acctVerify.resolvedAccountNumber)
+            }
             fd.append("userId", userId)
 
             const result = await submitTransferAction(null, fd)
@@ -176,9 +232,31 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                 setGlobalError(result.globalError)
                 return
             }
-            // Success — go to loader
-            router.push("/dashboard/processing")
+            // Show modal instead of routing
+            setModalData({
+                isVisible: true,
+                isInternal: result?.isInternal || false,
+                reference: result?.reference || "N/A",
+                amount: fields.amount,
+                recipientName: fields.recipientName,
+                bank: BANKS.find(b => b.value === fields.recipientBank)?.label || fields.recipientBank
+            })
         })
+    }
+
+    const closeModal = () => {
+        setModalData(null)
+        setAcctVerify({ status: "idle", message: "" })
+        // Reset form
+        setFields({
+            recipientName: "",
+            recipientAccountNumber: "",
+            recipientBank: "",
+            amount: "",
+            currency: "USD",
+            note: "",
+        })
+        router.refresh()
     }
 
     // Group banks by category
@@ -225,7 +303,10 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                                 id="recipientName" name="recipientName" type="text"
                                 placeholder="e.g. Jonathan Whitmore"
                                 value={fields.recipientName} onChange={handleChange}
-                                disabled={isPending} aria-invalid={!!errors.recipientName}
+                                disabled={isPending || (isInternal && acctVerify.status === "valid")}
+                                aria-invalid={!!errors.recipientName}
+                                readOnly={isInternal && acctVerify.status === "valid"}
+                                style={isInternal && acctVerify.status === "valid" ? { opacity: 0.7, cursor: "not-allowed" } : undefined}
                             />
                             {errors.recipientName && <span className="transfer__field-error">{errors.recipientName}</span>}
                         </div>
@@ -234,10 +315,26 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                             <label htmlFor="recipientAccountNumber">Account Number / IBAN</label>
                             <input
                                 id="recipientAccountNumber" name="recipientAccountNumber" type="text"
-                                placeholder="e.g. GPW4823901847 or DE89370400440532013000"
+                                placeholder={isInternal ? "e.g. GPW9039327915 or GPW9039327915-CHK" : "e.g. DE89370400440532013000"}
                                 value={fields.recipientAccountNumber} onChange={handleChange}
                                 disabled={isPending} aria-invalid={!!errors.recipientAccountNumber}
                             />
+                            {/* Live verification indicator for internal transfers */}
+                            {isInternal && acctVerify.status !== "idle" && (
+                                <span
+                                    className={`transfer__acct-verify transfer__acct-verify--${
+                                        acctVerify.status === "valid" ? "valid"
+                                        : acctVerify.status === "invalid" ? "invalid"
+                                        : "checking"
+                                    }`}
+                                    role="status"
+                                >
+                                    {acctVerify.status === "checking" && <Loader2 size={12} className="transfer__acct-spin" aria-hidden />}
+                                    {acctVerify.status === "valid" && <ShieldCheck size={12} aria-hidden />}
+                                    {acctVerify.status === "invalid" && <XCircle size={12} aria-hidden />}
+                                    {acctVerify.message}
+                                </span>
+                            )}
                             {errors.recipientAccountNumber && <span className="transfer__field-error">{errors.recipientAccountNumber}</span>}
                         </div>
 
@@ -322,19 +419,29 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                             All transfers are processed through SEC-regulated clearing networks.
                             International wires may take 1–3 business days to settle.
                         </p>
-                        <button type="submit" className="transfer__submit" disabled={isPending}>
-                            {isPending ? (
-                                <>
-                                    <span className="transfer__spinner" aria-hidden />
-                                    Processing…
-                                </>
-                            ) : (
-                                <>
-                                    <Send size={14} aria-hidden />
-                                    Initiate Transfer
-                                </>
-                            )}
-                        </button>
+                        <div className="transfer__footer-actions">
+                            <button 
+                                type="button" 
+                                className="transfer__cancel" 
+                                onClick={() => router.push('/user')} 
+                                disabled={isPending}
+                            >
+                                Cancel
+                            </button>
+                            <button type="submit" className="transfer__submit" disabled={isPending}>
+                                {isPending ? (
+                                    <>
+                                        <span className="transfer__spinner" aria-hidden />
+                                        Processing…
+                                    </>
+                                ) : (
+                                    <>
+                                        <Send size={14} aria-hidden />
+                                        Initiate Transfer
+                                    </>
+                                )}
+                            </button>
+                        </div>
                     </div>
                 </form>
 
@@ -380,6 +487,59 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                     )}
                 </aside>
             </div>
+
+            {/* ── Modal ── */}
+            {modalData?.isVisible && (
+                <div className="transfer__modal-overlay">
+                    <div className="transfer__modal">
+                        <div className="transfer__modal-header">
+                            <h2>{modalData.isInternal ? "Transfer Successful" : "Transfer Pending"}</h2>
+                            <button onClick={closeModal} aria-label="Close" className="transfer__modal-close">
+                                <XCircle size={20} />
+                            </button>
+                        </div>
+                        <div className="transfer__modal-body">
+                            {modalData.isInternal ? (
+                                <div className="transfer__modal-icon transfer__modal-icon--success">
+                                    <CheckCircle size={40} />
+                                </div>
+                            ) : (
+                                <div className="transfer__modal-icon transfer__modal-icon--pending">
+                                    <Clock size={40} />
+                                </div>
+                            )}
+                            <p className="transfer__modal-status">
+                                {modalData.isInternal 
+                                    ? "Your internal transfer has been processed successfully." 
+                                    : "Transaction Pending. Please contact customer care for approval."}
+                            </p>
+                            <div className="transfer__modal-details">
+                                <div className="transfer__modal-detail">
+                                    <span>Amount</span>
+                                    <strong>{fmt(parseFloat(modalData.amount), fields.currency)}</strong>
+                                </div>
+                                <div className="transfer__modal-detail">
+                                    <span>Recipient</span>
+                                    <strong>{modalData.recipientName}</strong>
+                                </div>
+                                <div className="transfer__modal-detail">
+                                    <span>Bank</span>
+                                    <strong>{modalData.bank}</strong>
+                                </div>
+                                <div className="transfer__modal-detail">
+                                    <span>Reference</span>
+                                    <strong>{modalData.reference}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="transfer__modal-footer">
+                            <button onClick={closeModal} className="transfer__modal-btn">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

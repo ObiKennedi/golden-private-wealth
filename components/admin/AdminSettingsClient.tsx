@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-    Mail, ShieldCheck, LogOut, Camera,
+    Mail, ShieldCheck, Camera,
     BadgeCheck, Clock, Crown, Activity,
     CalendarDays, KeyRound,
 } from "lucide-react";
@@ -63,7 +63,7 @@ export default function AdminSettingsClient({
         }
     };
 
-    const handleSignOut = () => startTransition(async () => { await signOutAction(); });
+    const handleSignOut = () => {}; // Sign-out is handled by the sidebar
 
     const fields = [
         {
@@ -109,15 +109,6 @@ export default function AdminSettingsClient({
                     <p className="profile__pretitle">Console Settings</p>
                     <h1 className="profile__title">Admin Profile</h1>
                 </div>
-                <button
-                    className="profile__signout"
-                    onClick={handleSignOut}
-                    disabled={isPending}
-                    aria-label="Sign out"
-                >
-                    <LogOut size={15} aria-hidden />
-                    {isPending ? "Signing out…" : "Sign Out"}
-                </button>
             </header>
 
             {/* ── Identity card ── */}

@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation"
 import {
     Search, ChevronDown, ChevronUp, BadgeCheck,
     Users, DollarSign, TrendingUp, X, Wallet,
+    Edit, ShieldAlert, Trash2, AlertCircle
 } from "lucide-react"
 import { updateAccountBalanceAction } from "@/actions/admin"
+import { updateUserAction, suspendUserAction, unsuspendUserAction, deleteUserAction } from "@/actions/admin/users"
 
 type AccountType = "CHECKING" | "SAVINGS" | "INVESTMENT" | "CREDIT"
 type BalancePreset =
@@ -26,6 +28,9 @@ interface User {
     fullName: string
     email: string
     accountNumber: string
+    ssn: string
+    status: string
+    suspendedUntil: string | null
     role: string
     emailVerified: boolean
     avatarUrl: string | null
@@ -103,6 +108,18 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
     const [feedbacks, setFeedbacks] = useState<Record<string, { text: string; accountId: string }>>({})
     const [errors, setErrors] = useState<Record<string, string>>({})
 
+    // Modal states
+    const [editUser, setEditUser] = useState<User | null>(null)
+    const [editForm, setEditForm] = useState({ fullName: "", email: "", ssn: "", avatarUrl: "" })
+    const [editError, setEditError] = useState("")
+
+    const [suspendUser, setSuspendUser] = useState<User | null>(null)
+    const [suspendDays, setSuspendDays] = useState("7")
+    const [suspendError, setSuspendError] = useState("")
+
+    const [deleteUser, setDeleteUser] = useState<User | null>(null)
+    const [deleteError, setDeleteError] = useState("")
+
     const verifiedCount = useMemo(() => users.filter((u) => u.emailVerified).length, [users])
 
     const filtered = useMemo(() => {
@@ -131,7 +148,6 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
             ? (sortDir === "asc" ? <ChevronUp size={12} /> : <ChevronDown size={12} />)
             : <ChevronDown size={12} className="sort-icon--inactive" />
 
-    // Get the currently selected account for a user (default to first account)
     const getActiveAccount = (user: User): Account | null => {
         if (!user.accounts.length) return null
         const id = selectedAccount[user.id]
@@ -151,7 +167,6 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                 setErrors((p) => ({ ...p, [userId]: result.error }))
                 return
             }
-            // Optimistic update
             setUsers((prev) => prev.map((u) =>
                 u.id !== userId ? u : {
                     ...u,
@@ -170,9 +185,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
     const handlePreset = (user: User, preset: BalancePreset) => {
         const account = getActiveAccount(user)
         if (!account) return
-        const next = preset.absolute !== undefined
-            ? preset.absolute
-            : account.balance + preset.delta
+        const next = preset.absolute !== undefined ? preset.absolute : account.balance + preset.delta
         applyBalance(user.id, account.id, next)
     }
 
@@ -192,9 +205,73 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
         applyBalance(user.id, account.id, next)
     }
 
+    const handleEditSubmit = () => {
+        if (!editUser) return
+        setEditError("")
+        startTransition(async () => {
+            const result = await updateUserAction(editUser.id, editForm)
+            if (result.error) {
+                setEditError(result.error)
+            } else {
+                setUsers(users.map(u => u.id === editUser.id ? { ...u, ...editForm } : u))
+                setEditUser(null)
+                router.refresh()
+            }
+        })
+    }
+
+    const handleSuspendSubmit = () => {
+        if (!suspendUser) return
+        setSuspendError("")
+        const days = parseInt(suspendDays)
+        if (isNaN(days) || days <= 0) {
+            setSuspendError("Please enter a valid number of days.")
+            return
+        }
+        startTransition(async () => {
+            const result = await suspendUserAction(suspendUser.id, days)
+            if (result.error) {
+                setSuspendError(result.error)
+            } else {
+                setUsers(users.map(u => u.id === suspendUser.id ? { ...u, status: "SUSPENDED" } : u)) // suspendedUntil doesn't need to be strictly mapped if we refresh
+                setSuspendUser(null)
+                router.refresh()
+            }
+        })
+    }
+
+    const handleUnsuspend = () => {
+        if (!suspendUser) return
+        setSuspendError("")
+        startTransition(async () => {
+            const result = await unsuspendUserAction(suspendUser.id)
+            if (result.error) {
+                setSuspendError(result.error)
+            } else {
+                setUsers(users.map(u => u.id === suspendUser.id ? { ...u, status: "ACTIVE", suspendedUntil: null } : u))
+                setSuspendUser(null)
+                router.refresh()
+            }
+        })
+    }
+
+    const handleDeleteSubmit = () => {
+        if (!deleteUser) return
+        setDeleteError("")
+        startTransition(async () => {
+            const result = await deleteUserAction(deleteUser.id)
+            if (result.error) {
+                setDeleteError(result.error)
+            } else {
+                setUsers(users.filter(u => u.id !== deleteUser.id))
+                setDeleteUser(null)
+                router.refresh()
+            }
+        })
+    }
+
     return (
         <div className="adminusers__inner">
-
             {/* ── Header ── */}
             <header className="adminusers__header">
                 <div>
@@ -272,7 +349,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                         Joined <SortIcon field="createdAt" />
                                     </button>
                                 </th>
-                                <th>Adjust Balance</th>
+                                <th>Manage</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -289,13 +366,15 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                         {/* Client */}
                                         <td>
                                             <div className="adminusers__client">
-                                                <div className="adminusers__avatar">
+                                                <div className="adminusers__avatar" style={user.status === 'SUSPENDED' ? { opacity: 0.5 } : {}}>
                                                     {user.avatarUrl
                                                         ? <img src={user.avatarUrl} alt={user.fullName} />
                                                         : <span>{initials(user.fullName)}</span>}
                                                 </div>
                                                 <div className="adminusers__client-info">
-                                                    <span className="adminusers__client-name">{user.fullName}</span>
+                                                    <span className="adminusers__client-name" style={user.status === 'SUSPENDED' ? { color: '#ef4444' } : {}}>
+                                                        {user.fullName} {user.status === 'SUSPENDED' && '(Suspended)'}
+                                                    </span>
                                                     <span className="adminusers__client-email">{user.email}</span>
                                                 </div>
                                                 <span
@@ -348,12 +427,10 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                             </span>
                                         </td>
 
-                                        {/* Adjust balance */}
+                                        {/* Manage */}
                                         <td className="adminusers__action-cell">
-                                            {user.accounts.length === 0 ? (
-                                                <span className="adminusers__no-accounts">—</span>
-                                            ) : (
-                                                <div className="adminusers__dropdown-wrap">
+                                            <div className="adminusers__dropdown-wrap" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                {user.accounts.length > 0 && (
                                                     <button
                                                         className={`adminusers__dropdown-trigger${isOpen ? " open" : ""}`}
                                                         onClick={() => setOpenDropdown(isOpen ? null : user.id)}
@@ -363,101 +440,125 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                         Adjust
                                                         <ChevronDown size={12} aria-hidden />
                                                     </button>
+                                                )}
+                                                
+                                                <button 
+                                                    className="adminusers__icon-btn" 
+                                                    onClick={() => {
+                                                        setEditUser(user)
+                                                        setEditForm({ fullName: user.fullName, email: user.email, ssn: user.ssn || "", avatarUrl: user.avatarUrl || "" })
+                                                    }}
+                                                    title="Edit User"
+                                                >
+                                                    <Edit size={14} />
+                                                </button>
+                                                <button 
+                                                    className="adminusers__icon-btn" 
+                                                    onClick={() => setSuspendUser(user)}
+                                                    title="Suspend User"
+                                                >
+                                                    <ShieldAlert size={14} color={user.status === 'SUSPENDED' ? '#f59e0b' : 'currentColor'} />
+                                                </button>
+                                                <button 
+                                                    className="adminusers__icon-btn" 
+                                                    onClick={() => setDeleteUser(user)}
+                                                    title="Delete User"
+                                                >
+                                                    <Trash2 size={14} color="#ef4444" />
+                                                </button>
 
-                                                    {isOpen && (
-                                                        <div className="adminusers__dropdown" role="dialog" aria-label={`Adjust balance for ${user.fullName}`}>
-
-                                                            <div className="adminusers__dropdown-header">
-                                                                <div className="adminusers__dropdown-header-left">
-                                                                    <Wallet size={13} aria-hidden />
-                                                                    <span>{user.fullName}</span>
-                                                                </div>
-                                                                <button className="adminusers__dropdown-close" onClick={() => setOpenDropdown(null)} aria-label="Close">
-                                                                    <X size={12} />
-                                                                </button>
+                                                {isOpen && (
+                                                    <div className="adminusers__dropdown" role="dialog" aria-label={`Adjust balance for ${user.fullName}`}>
+                                                        <div className="adminusers__dropdown-header">
+                                                            <div className="adminusers__dropdown-header-left">
+                                                                <Wallet size={13} aria-hidden />
+                                                                <span>{user.fullName}</span>
                                                             </div>
+                                                            <button className="adminusers__dropdown-close" onClick={() => setOpenDropdown(null)} aria-label="Close">
+                                                                <X size={12} />
+                                                            </button>
+                                                        </div>
 
-                                                            {/* Account selector */}
-                                                            <div className="adminusers__account-selector">
-                                                                <p className="adminusers__selector-label">Select Account</p>
-                                                                <div className="adminusers__selector-tabs">
-                                                                    {user.accounts.map((acc) => (
-                                                                        <button
-                                                                            key={acc.id}
-                                                                            className={`adminusers__selector-tab${(selectedAccount[user.id] ?? user.accounts[0].id) === acc.id ? " active" : ""
-                                                                                }`}
-                                                                            onClick={() => setSelectedAccount((p) => ({ ...p, [user.id]: acc.id }))}
-                                                                        >
-                                                                            <span className={`adminusers__tab-type ${ACCOUNT_TYPE_COLORS[acc.type]}`}>
-                                                                                {ACCOUNT_TYPE_LABELS[acc.type]}
-                                                                            </span>
-                                                                            <span className="adminusers__tab-balance">
-                                                                                {fmt(acc.balance, acc.currency)}
-                                                                            </span>
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                                {active && (
-                                                                    <p className="adminusers__active-balance">
-                                                                        Current balance: <strong>{fmt(active.balance, active.currency)}</strong>
-                                                                    </p>
-                                                                )}
-                                                            </div>
-
-                                                            {/* Presets */}
-                                                            <div className="adminusers__presets">
-                                                                {BALANCE_PRESETS.map((preset) => (
+                                                        {/* Account selector */}
+                                                        <div className="adminusers__account-selector">
+                                                            <p className="adminusers__selector-label">Select Account</p>
+                                                            <div className="adminusers__selector-tabs">
+                                                                {user.accounts.map((acc) => (
                                                                     <button
-                                                                        key={preset.label}
-                                                                        className={`adminusers__preset${preset.delta !== undefined && preset.delta < 0 ? " adminusers__preset--neg" : ""}`}
-                                                                        onClick={() => handlePreset(user, preset)}
-                                                                        disabled={isPending}
+                                                                        key={acc.id}
+                                                                        className={`adminusers__selector-tab${(selectedAccount[user.id] ?? user.accounts[0].id) === acc.id ? " active" : ""
+                                                                            }`}
+                                                                        onClick={() => setSelectedAccount((p) => ({ ...p, [user.id]: acc.id }))}
                                                                     >
-                                                                        {preset.label}
+                                                                        <span className={`adminusers__tab-type ${ACCOUNT_TYPE_COLORS[acc.type]}`}>
+                                                                            {ACCOUNT_TYPE_LABELS[acc.type]}
+                                                                        </span>
+                                                                        <span className="adminusers__tab-balance">
+                                                                            {fmt(acc.balance, acc.currency)}
+                                                                        </span>
                                                                     </button>
                                                                 ))}
                                                             </div>
-
-                                                            {/* Custom input */}
-                                                            <div className="adminusers__custom">
-                                                                <p className="adminusers__custom-label">Custom amount</p>
-                                                                <div className="adminusers__custom-row">
-                                                                    <select
-                                                                        className="adminusers__custom-mode"
-                                                                        value={customMode[user.id] ?? "add"}
-                                                                        onChange={(e) => setCustomMode((p) => ({ ...p, [user.id]: e.target.value as any }))}
-                                                                    >
-                                                                        <option value="add">Add</option>
-                                                                        <option value="subtract">Subtract</option>
-                                                                        <option value="set">Set to</option>
-                                                                    </select>
-                                                                    <div className="adminusers__custom-input-wrap">
-                                                                        <span className="adminusers__custom-symbol">$</span>
-                                                                        <input
-                                                                            type="number"
-                                                                            className="adminusers__custom-input"
-                                                                            placeholder="0.00"
-                                                                            min="0"
-                                                                            step="0.01"
-                                                                            value={customAmount[user.id] ?? ""}
-                                                                            onChange={(e) => setCustomAmount((p) => ({ ...p, [user.id]: e.target.value }))}
-                                                                            onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit(user)}
-                                                                        />
-                                                                    </div>
-                                                                    <button
-                                                                        className="adminusers__custom-apply"
-                                                                        onClick={() => handleCustomSubmit(user)}
-                                                                        disabled={isPending}
-                                                                    >
-                                                                        Apply
-                                                                    </button>
-                                                                </div>
-                                                                {error && <p className="adminusers__error" role="alert">{error}</p>}
-                                                            </div>
+                                                            {active && (
+                                                                <p className="adminusers__active-balance">
+                                                                    Current balance: <strong>{fmt(active.balance, active.currency)}</strong>
+                                                                </p>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                            )}
+
+                                                        {/* Presets */}
+                                                        <div className="adminusers__presets">
+                                                            {BALANCE_PRESETS.map((preset) => (
+                                                                <button
+                                                                    key={preset.label}
+                                                                    className={`adminusers__preset${preset.delta !== undefined && preset.delta < 0 ? " adminusers__preset--neg" : ""}`}
+                                                                    onClick={() => handlePreset(user, preset)}
+                                                                    disabled={isPending}
+                                                                >
+                                                                    {preset.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* Custom input */}
+                                                        <div className="adminusers__custom">
+                                                            <p className="adminusers__custom-label">Custom amount</p>
+                                                            <div className="adminusers__custom-row">
+                                                                <select
+                                                                    className="adminusers__custom-mode"
+                                                                    value={customMode[user.id] ?? "add"}
+                                                                    onChange={(e) => setCustomMode((p) => ({ ...p, [user.id]: e.target.value as any }))}
+                                                                >
+                                                                    <option value="add">Add</option>
+                                                                    <option value="subtract">Subtract</option>
+                                                                    <option value="set">Set to</option>
+                                                                </select>
+                                                                <div className="adminusers__custom-input-wrap">
+                                                                    <span className="adminusers__custom-symbol">$</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        className="adminusers__custom-input"
+                                                                        placeholder="0.00"
+                                                                        min="0"
+                                                                        step="0.01"
+                                                                        value={customAmount[user.id] ?? ""}
+                                                                        onChange={(e) => setCustomAmount((p) => ({ ...p, [user.id]: e.target.value }))}
+                                                                        onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit(user)}
+                                                                    />
+                                                                </div>
+                                                                <button
+                                                                    className="adminusers__custom-apply"
+                                                                    onClick={() => handleCustomSubmit(user)}
+                                                                    disabled={isPending}
+                                                                >
+                                                                    Apply
+                                                                </button>
+                                                            </div>
+                                                            {error && <p className="adminusers__error" role="alert">{error}</p>}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 )
@@ -470,6 +571,98 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
             <p className="adminusers__count">
                 Showing {filtered.length} of {users.length} clients
             </p>
+
+            {/* Modals */}
+            {editUser && (
+                <div className="transfer__modal-overlay">
+                    <div className="transfer__modal">
+                        <div className="transfer__modal-header">
+                            <h2>Edit User</h2>
+                            <button onClick={() => setEditUser(null)} className="transfer__modal-close"><X size={20} /></button>
+                        </div>
+                        <div className="transfer__modal-body" style={{ alignItems: 'flex-start', textAlign: 'left', padding: 'var(--space-6)' }}>
+                            {editError && <div style={{color: '#ef4444', marginBottom: '10px'}}>{editError}</div>}
+                            <label style={{ display: 'block', width: '100%', marginBottom: '10px' }}>
+                                Full Name
+                                <input style={{ width: '100%', padding: '8px', marginTop: '4px', background: 'var(--color-navy-950)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }} value={editForm.fullName} onChange={e => setEditForm({...editForm, fullName: e.target.value})} />
+                            </label>
+                            <label style={{ display: 'block', width: '100%', marginBottom: '10px' }}>
+                                Email
+                                <input style={{ width: '100%', padding: '8px', marginTop: '4px', background: 'var(--color-navy-950)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }} value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
+                            </label>
+                            <label style={{ display: 'block', width: '100%', marginBottom: '10px' }}>
+                                Tax ID / SSN
+                                <input style={{ width: '100%', padding: '8px', marginTop: '4px', background: 'var(--color-navy-950)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }} value={editForm.ssn} onChange={e => setEditForm({...editForm, ssn: e.target.value})} />
+                            </label>
+                            <label style={{ display: 'block', width: '100%', marginBottom: '10px' }}>
+                                Avatar URL
+                                <input style={{ width: '100%', padding: '8px', marginTop: '4px', background: 'var(--color-navy-950)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }} value={editForm.avatarUrl} onChange={e => setEditForm({...editForm, avatarUrl: e.target.value})} />
+                            </label>
+                        </div>
+                        <div className="transfer__modal-footer">
+                            <button onClick={handleEditSubmit} className="transfer__modal-btn" disabled={isPending}>Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {suspendUser && (
+                <div className="transfer__modal-overlay">
+                    <div className="transfer__modal">
+                        <div className="transfer__modal-header">
+                            <h2>{suspendUser.status === 'SUSPENDED' ? 'Manage Suspension' : 'Suspend User'}</h2>
+                            <button onClick={() => setSuspendUser(null)} className="transfer__modal-close"><X size={20} /></button>
+                        </div>
+                        <div className="transfer__modal-body" style={{ alignItems: 'flex-start', textAlign: 'left', padding: 'var(--space-6)' }}>
+                            {suspendError && <div style={{color: '#ef4444', marginBottom: '10px'}}>{suspendError}</div>}
+                            <p style={{marginBottom: '15px'}}>User: <strong>{suspendUser.fullName}</strong></p>
+                            
+                            {suspendUser.status === 'SUSPENDED' ? (
+                                <div>
+                                    <p style={{marginBottom: '15px', color: '#f59e0b'}}>This account is currently suspended until {suspendUser.suspendedUntil ? new Date(suspendUser.suspendedUntil).toLocaleDateString() : 'indefinitely'}.</p>
+                                    <button onClick={handleUnsuspend} className="transfer__modal-btn" disabled={isPending} style={{background: 'var(--color-navy-600)'}}>Lift Suspension</button>
+                                </div>
+                            ) : (
+                                <label style={{ display: 'block', width: '100%' }}>
+                                    Suspend for (days):
+                                    <input type="number" min="1" style={{ width: '100%', padding: '8px', marginTop: '4px', background: 'var(--color-navy-950)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }} value={suspendDays} onChange={e => setSuspendDays(e.target.value)} />
+                                </label>
+                            )}
+                        </div>
+                        {suspendUser.status !== 'SUSPENDED' && (
+                            <div className="transfer__modal-footer">
+                                <button onClick={handleSuspendSubmit} className="transfer__modal-btn" disabled={isPending} style={{background: '#ef4444', color: 'white', border: 'none'}}>Suspend Account</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {deleteUser && (
+                <div className="transfer__modal-overlay">
+                    <div className="transfer__modal">
+                        <div className="transfer__modal-header">
+                            <h2>Delete User</h2>
+                            <button onClick={() => setDeleteUser(null)} className="transfer__modal-close"><X size={20} /></button>
+                        </div>
+                        <div className="transfer__modal-body" style={{ alignItems: 'flex-start', textAlign: 'left', padding: 'var(--space-6)' }}>
+                            {deleteError && <div style={{color: '#ef4444', marginBottom: '10px'}}>{deleteError}</div>}
+                            <div style={{display: 'flex', gap: '10px', alignItems: 'center', color: '#ef4444', marginBottom: '15px'}}>
+                                <AlertCircle size={24} />
+                                <strong style={{fontSize: '16px'}}>Warning: Irreversible Action</strong>
+                            </div>
+                            <p style={{lineHeight: 1.5, color: 'var(--color-text-secondary)'}}>
+                                Are you sure you want to permanently delete <strong>{deleteUser.fullName}</strong>? This will instantly remove their account, balances, loans, and all transaction history. This action cannot be undone.
+                            </p>
+                        </div>
+                        <div className="transfer__modal-footer" style={{gap: '10px'}}>
+                            <button onClick={() => setDeleteUser(null)} className="transfer__modal-btn" style={{background: 'transparent'}}>Cancel</button>
+                            <button onClick={handleDeleteSubmit} className="transfer__modal-btn" disabled={isPending} style={{background: '#ef4444', color: 'white', border: 'none'}}>Delete User</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     )
 }

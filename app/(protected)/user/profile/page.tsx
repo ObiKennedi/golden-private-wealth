@@ -46,7 +46,7 @@ export default async function ProfilePage() {
                 fullName={user.fullName}
                 email={user.email}
                 accountNumber={user.accountNumber}
-                maskedSSN={maskSSN(user.ssnEncrypted)}
+                maskedSSN={maskSSN(user.ssn)}
                 role={user.role}
                 avatarUrl={user.avatarUrl ?? null}
                 initials={initials}

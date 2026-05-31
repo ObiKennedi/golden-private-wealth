@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
     User, Mail, CreditCard, ShieldCheck,
-    LogOut, Camera, BadgeCheck, Clock, Crown,
+    LogOut, Camera, BadgeCheck, Clock, Crown, Copy, Check
 } from "lucide-react"
 import { updateAvatarAction, signOutAction } from "@/actions/profile"
 
@@ -30,6 +30,7 @@ export default function ProfileClient({
     const [avatar, setAvatar] = useState<string | null>(avatarUrl)
     const [uploading, setUploading] = useState(false)
     const [uploadError, setUploadError] = useState<string | null>(null)
+    const [copiedAccount, setCopiedAccount] = useState(false)
     const [isPending, startTransition] = useTransition()
 
     const handleAvatarClick = () => fileInputRef.current?.click()
@@ -63,6 +64,16 @@ export default function ProfileClient({
 
     const handleSignOut = () => startTransition(async () => { await signOutAction() })
 
+    const handleCopyAccount = async () => {
+        try {
+            await navigator.clipboard.writeText(accountNumber)
+            setCopiedAccount(true)
+            setTimeout(() => setCopiedAccount(false), 2000)
+        } catch (err) {
+            console.error("Failed to copy", err)
+        }
+    }
+
     const fields = [
         { icon: <User size={15} aria-hidden />, label: "Full Name", value: fullName },
         {
@@ -71,7 +82,12 @@ export default function ProfileClient({
                 ? { text: "Verified", cls: "profile-badge--verified", Icon: BadgeCheck }
                 : { text: "Unverified", cls: "profile-badge--unverified", Icon: Clock }
         },
-        { icon: <CreditCard size={15} aria-hidden />, label: "Account Number", value: accountNumber, mono: true },
+        { 
+            icon: <CreditCard size={15} aria-hidden />, 
+            label: "Account Number", 
+            value: accountNumber,
+            copyable: true 
+        },
         { icon: <ShieldCheck size={15} aria-hidden />, label: "Tax ID / SSN", value: maskedSSN, mono: true },
     ]
 
@@ -130,6 +146,17 @@ export default function ProfileClient({
                                     <field.badge.Icon size={10} aria-hidden />
                                     {field.badge.text}
                                 </span>
+                            )}
+                            {field.copyable && (
+                                <button 
+                                    className="profile__field-copy" 
+                                    onClick={handleCopyAccount}
+                                    aria-label="Copy account number"
+                                    title="Copy account number"
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: copiedAccount ? '#4ade80' : 'var(--color-text-muted)', marginLeft: 'var(--space-2)' }}
+                                >
+                                    {copiedAccount ? <Check size={14} /> : <Copy size={14} />}
+                                </button>
                             )}
                         </div>
                     </div>

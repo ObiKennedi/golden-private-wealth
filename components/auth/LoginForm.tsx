@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useActionState } from "react";
+import React, { useActionState, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { loginAction } from "@/actions/auth";
 
 export default function LoginForm() {
     const searchParams = useSearchParams();
     const [state, formAction, isPending] = useActionState(loginAction, null);
-
-    // Track successful password resets passed via query parameters
+    const [showPassword, setShowPassword] = useState(false);
     const isResetSuccess = searchParams.get("reset") === "success";
 
     return (
@@ -70,14 +70,35 @@ export default function LoginForm() {
                                 Forgot Passphrase?
                             </Link>
                         </div>
-                        <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            placeholder="••••••••••••"
-                            disabled={isPending}
-                            required
-                        />
+                        <div style={{ position: "relative" }}>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                id="password"
+                                name="password"
+                                placeholder="••••••••••••"
+                                disabled={isPending}
+                                required
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(p => !p)}
+                                aria-label={showPassword ? "Hide password" : "Show password"}
+                                style={{
+                                    position: "absolute",
+                                    right: "var(--space-4)",
+                                    top: "50%",
+                                    transform: "translateY(-50%)",
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    color: "var(--color-text-muted)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                }}
+                            >
+                                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                        </div>
                         {state?.error?.password && (
                             <span className="form-field-error" aria-live="polite">
                                 {state.error.password[0]}
