@@ -20,7 +20,7 @@ function fmt(val: { toFixed: (n: number) => string } | number, currency = "USD")
     }).format(n);
 }
 
-const CREDIT_TYPES = new Set(["DEPOSIT", "YIELD_PAYOUT", "ASSET_SALE"]);
+
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,10 @@ export default async function TransactionsPage() {
 
     const user = await prisma.user.findUnique({
         where: { id: userId },
-        include: { accounts: true },
+        include: {
+            accounts: true,
+            loans: { where: { status: { in: ["ACTIVE", "APPROVED"] } } },
+        },
     });
     if (!user) redirect("/login");
 
@@ -59,22 +62,29 @@ export default async function TransactionsPage() {
         },
     });
 
-    // Totals — a TRANSFER is income when the user's account is the receiver
-    const totalIn = transactions
-        .filter(tx => {
-            if (CREDIT_TYPES.has(tx.type)) return true;
-            if (tx.type === "TRANSFER" && tx.receiverAccountId && accountIds.includes(tx.receiverAccountId)) return true;
-            return false;
-        })
-        .reduce((s, tx) => s + Number(tx.amount), 0);
-    const totalOut = transactions
-        .filter(tx => {
-            if (CREDIT_TYPES.has(tx.type)) return false;
-            if (tx.type === "TRANSFER" && tx.senderAccountId && accountIds.includes(tx.senderAccountId)) return true;
-            if (!CREDIT_TYPES.has(tx.type) && tx.type !== "TRANSFER") return true;
-            return false;
-        })
-        .reduce((s, tx) => s + Number(tx.amount), 0);
+    // Account balance snapshots for the summary card
+    const checking  = user.accounts.find(a => a.type === "CHECKING");
+    const savings   = user.accounts.find(a => a.type === "SAVINGS");
+    const invest    = user.accounts.find(a => a.type === "INVESTMENT");
+    const totalLoan = user.loans.reduce((s, l) => s + Number(l.principalAmount), 0);
+
+    const serializedTransactions = transactions.map(tx => ({
+        ...tx,
+        amount: Number(tx.amount),
+        createdAt: tx.createdAt.toISOString(),
+        senderAccount: tx.senderAccount ? {
+            ...tx.senderAccount,
+            balance: Number(tx.senderAccount.balance),
+            createdAt: tx.senderAccount.createdAt.toISOString(),
+            updatedAt: tx.senderAccount.updatedAt.toISOString(),
+        } : null,
+        receiverAccount: tx.receiverAccount ? {
+            ...tx.receiverAccount,
+            balance: Number(tx.receiverAccount.balance),
+            createdAt: tx.receiverAccount.createdAt.toISOString(),
+            updatedAt: tx.receiverAccount.updatedAt.toISOString(),
+        } : null,
+    }));
 
     return (
         <div className="txpage">
@@ -85,7 +95,12 @@ export default async function TransactionsPage() {
                     <p className="txpage__pretitle">Account History</p>
                     <h1 className="txpage__title">Transactions</h1>
                 </div>
-                <TxSummaryAmounts totalIn={fmt(totalIn)} totalOut={fmt(totalOut)} />
+                <TxSummaryAmounts
+                    savingsBalance={fmt(Number(savings?.balance ?? 0), savings?.currency ?? "USD")}
+                    checkingBalance={fmt(Number(checking?.balance ?? 0), checking?.currency ?? "USD")}
+                    loanBalance={fmt(totalLoan)}
+                    investmentBalance={fmt(Number(invest?.balance ?? 0), invest?.currency ?? "USD")}
+                />
             </header>
 
             {/* ── List ── */}
@@ -95,7 +110,7 @@ export default async function TransactionsPage() {
                     <p>No transactions on record.</p>
                 </div>
             ) : (
-                <TransactionsList transactions={transactions as any} accountIds={accountIds} />
+                <TransactionsList transactions={serializedTransactions as any} accountIds={accountIds} />
             )}
 
         </div>

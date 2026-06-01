@@ -443,7 +443,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                 )}
                                                 
                                                 <button 
-                                                    className="adminusers__icon-btn" 
+                                                    className="adminusers__icon-btn edit-btn" 
                                                     onClick={() => {
                                                         setEditUser(user)
                                                         setEditForm({ fullName: user.fullName, email: user.email, ssn: user.ssn || "", avatarUrl: user.avatarUrl || "" })
@@ -453,14 +453,14 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                     <Edit size={14} />
                                                 </button>
                                                 <button 
-                                                    className="adminusers__icon-btn" 
+                                                    className="adminusers__icon-btn suspend-btn" 
                                                     onClick={() => setSuspendUser(user)}
                                                     title="Suspend User"
                                                 >
                                                     <ShieldAlert size={14} color={user.status === 'SUSPENDED' ? '#f59e0b' : 'currentColor'} />
                                                 </button>
                                                 <button 
-                                                    className="adminusers__icon-btn" 
+                                                    className="adminusers__icon-btn delete-btn" 
                                                     onClick={() => setDeleteUser(user)}
                                                     title="Delete User"
                                                 >
@@ -574,64 +574,70 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
 
             {/* Modals */}
             {editUser && (
-                <div className="transfer__modal-overlay">
-                    <div className="transfer__modal">
-                        <div className="transfer__modal-header">
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal">
+                        <div className="admin-modal-header">
                             <h2>Edit User</h2>
-                            <button onClick={() => setEditUser(null)} className="transfer__modal-close"><X size={20} /></button>
+                            <button onClick={() => setEditUser(null)} className="admin-modal-close" aria-label="Close modal"><X size={16} /></button>
                         </div>
-                        <div className="transfer__modal-body" style={{ alignItems: 'flex-start', textAlign: 'left', padding: 'var(--space-6)' }}>
-                            {editError && <div style={{color: '#ef4444', marginBottom: '10px'}}>{editError}</div>}
-                            <label style={{ display: 'block', width: '100%', marginBottom: '10px' }}>
-                                Full Name
-                                <input style={{ width: '100%', padding: '8px', marginTop: '4px', background: 'var(--color-navy-950)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }} value={editForm.fullName} onChange={e => setEditForm({...editForm, fullName: e.target.value})} />
-                            </label>
-                            <label style={{ display: 'block', width: '100%', marginBottom: '10px' }}>
-                                Email
-                                <input style={{ width: '100%', padding: '8px', marginTop: '4px', background: 'var(--color-navy-950)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }} value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
-                            </label>
-                            <label style={{ display: 'block', width: '100%', marginBottom: '10px' }}>
-                                Tax ID / SSN
-                                <input style={{ width: '100%', padding: '8px', marginTop: '4px', background: 'var(--color-navy-950)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }} value={editForm.ssn} onChange={e => setEditForm({...editForm, ssn: e.target.value})} />
-                            </label>
-                            <label style={{ display: 'block', width: '100%', marginBottom: '10px' }}>
-                                Avatar URL
-                                <input style={{ width: '100%', padding: '8px', marginTop: '4px', background: 'var(--color-navy-950)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }} value={editForm.avatarUrl} onChange={e => setEditForm({...editForm, avatarUrl: e.target.value})} />
-                            </label>
+                        <div className="admin-modal-body">
+                            {editError && <div className="adminusers__error">{editError}</div>}
+                            <div className="admin-modal-field">
+                                <label>Full Name</label>
+                                <input value={editForm.fullName} onChange={e => setEditForm({...editForm, fullName: e.target.value})} />
+                            </div>
+                            <div className="admin-modal-field">
+                                <label>Email</label>
+                                <input value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
+                            </div>
+                            <div className="admin-modal-field">
+                                <label>Tax ID / SSN</label>
+                                <input value={editForm.ssn} onChange={e => setEditForm({...editForm, ssn: e.target.value})} />
+                            </div>
+                            <div className="admin-modal-field">
+                                <label>Avatar URL</label>
+                                <input value={editForm.avatarUrl} onChange={e => setEditForm({...editForm, avatarUrl: e.target.value})} />
+                            </div>
                         </div>
-                        <div className="transfer__modal-footer">
-                            <button onClick={handleEditSubmit} className="transfer__modal-btn" disabled={isPending}>Save Changes</button>
+                        <div className="admin-modal-footer">
+                            <button onClick={() => setEditUser(null)} className="admin-modal-btn">Cancel</button>
+                            <button onClick={handleEditSubmit} className="admin-modal-btn admin-modal-btn--primary" disabled={isPending}>Save Changes</button>
                         </div>
                     </div>
                 </div>
             )}
 
             {suspendUser && (
-                <div className="transfer__modal-overlay">
-                    <div className="transfer__modal">
-                        <div className="transfer__modal-header">
+                <div className="admin-modal-overlay">
+                    <div className={`admin-modal ${suspendUser.status === 'SUSPENDED' ? 'admin-modal--warning' : 'admin-modal--danger'}`}>
+                        <div className="admin-modal-header">
                             <h2>{suspendUser.status === 'SUSPENDED' ? 'Manage Suspension' : 'Suspend User'}</h2>
-                            <button onClick={() => setSuspendUser(null)} className="transfer__modal-close"><X size={20} /></button>
+                            <button onClick={() => setSuspendUser(null)} className="admin-modal-close" aria-label="Close modal"><X size={16} /></button>
                         </div>
-                        <div className="transfer__modal-body" style={{ alignItems: 'flex-start', textAlign: 'left', padding: 'var(--space-6)' }}>
-                            {suspendError && <div style={{color: '#ef4444', marginBottom: '10px'}}>{suspendError}</div>}
-                            <p style={{marginBottom: '15px'}}>User: <strong>{suspendUser.fullName}</strong></p>
+                        <div className="admin-modal-body">
+                            {suspendError && <div className="adminusers__error">{suspendError}</div>}
+                            <p style={{ margin: 0, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', textAlign: 'left' }}>
+                                User: <strong>{suspendUser.fullName}</strong>
+                            </p>
                             
                             {suspendUser.status === 'SUSPENDED' ? (
-                                <div>
-                                    <p style={{marginBottom: '15px', color: '#f59e0b'}}>This account is currently suspended until {suspendUser.suspendedUntil ? new Date(suspendUser.suspendedUntil).toLocaleDateString() : 'indefinitely'}.</p>
-                                    <button onClick={handleUnsuspend} className="transfer__modal-btn" disabled={isPending} style={{background: 'var(--color-navy-600)'}}>Lift Suspension</button>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', textAlign: 'left' }}>
+                                    <p style={{ margin: 0, color: '#f59e0b', fontSize: 'var(--font-size-sm)', lineHeight: 1.5 }}>
+                                        This account is currently suspended until {suspendUser.suspendedUntil ? new Date(suspendUser.suspendedUntil).toLocaleDateString() : 'indefinitely'}.
+                                    </p>
+                                    <button onClick={handleUnsuspend} className="admin-modal-btn admin-modal-btn--warning" disabled={isPending} style={{ width: 'auto', alignSelf: 'flex-start' }}>Lift Suspension</button>
                                 </div>
                             ) : (
-                                <label style={{ display: 'block', width: '100%' }}>
-                                    Suspend for (days):
-                                    <input type="number" min="1" style={{ width: '100%', padding: '8px', marginTop: '4px', background: 'var(--color-navy-950)', border: '1px solid var(--color-border)', color: 'white', borderRadius: '4px' }} value={suspendDays} onChange={e => setSuspendDays(e.target.value)} />
-                                </label>
+                                <div className="admin-modal-field">
+                                    <label>Suspend for (days)</label>
+                                    <input type="number" min="1" value={suspendDays} onChange={e => setSuspendDays(e.target.value)} />
+                                </div>
                             )}
                         </div>
                         {suspendUser.status !== 'SUSPENDED' && (
-                            <div className="transfer__modal-footer">
-                                <button onClick={handleSuspendSubmit} className="transfer__modal-btn" disabled={isPending} style={{background: '#ef4444', color: 'white', border: 'none'}}>Suspend Account</button>
+                            <div className="admin-modal-footer">
+                                <button onClick={() => setSuspendUser(null)} className="admin-modal-btn">Cancel</button>
+                                <button onClick={handleSuspendSubmit} className="admin-modal-btn admin-modal-btn--danger" disabled={isPending}>Suspend Account</button>
                             </div>
                         )}
                     </div>
@@ -639,25 +645,25 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
             )}
 
             {deleteUser && (
-                <div className="transfer__modal-overlay">
-                    <div className="transfer__modal">
-                        <div className="transfer__modal-header">
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal admin-modal--danger">
+                        <div className="admin-modal-header">
                             <h2>Delete User</h2>
-                            <button onClick={() => setDeleteUser(null)} className="transfer__modal-close"><X size={20} /></button>
+                            <button onClick={() => setDeleteUser(null)} className="admin-modal-close" aria-label="Close modal"><X size={16} /></button>
                         </div>
-                        <div className="transfer__modal-body" style={{ alignItems: 'flex-start', textAlign: 'left', padding: 'var(--space-6)' }}>
-                            {deleteError && <div style={{color: '#ef4444', marginBottom: '10px'}}>{deleteError}</div>}
-                            <div style={{display: 'flex', gap: '10px', alignItems: 'center', color: '#ef4444', marginBottom: '15px'}}>
+                        <div className="admin-modal-body" style={{ gap: 'var(--space-3)' }}>
+                            {deleteError && <div className="adminusers__error">{deleteError}</div>}
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', color: '#ef4444' }}>
                                 <AlertCircle size={24} />
-                                <strong style={{fontSize: '16px'}}>Warning: Irreversible Action</strong>
+                                <strong style={{ fontSize: 'var(--font-size-md)' }}>Warning: Irreversible Action</strong>
                             </div>
-                            <p style={{lineHeight: 1.5, color: 'var(--color-text-secondary)'}}>
+                            <p style={{ lineHeight: 1.6, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', margin: 0, textAlign: 'left' }}>
                                 Are you sure you want to permanently delete <strong>{deleteUser.fullName}</strong>? This will instantly remove their account, balances, loans, and all transaction history. This action cannot be undone.
                             </p>
                         </div>
-                        <div className="transfer__modal-footer" style={{gap: '10px'}}>
-                            <button onClick={() => setDeleteUser(null)} className="transfer__modal-btn" style={{background: 'transparent'}}>Cancel</button>
-                            <button onClick={handleDeleteSubmit} className="transfer__modal-btn" disabled={isPending} style={{background: '#ef4444', color: 'white', border: 'none'}}>Delete User</button>
+                        <div className="admin-modal-footer">
+                            <button onClick={() => setDeleteUser(null)} className="admin-modal-btn">Cancel</button>
+                            <button onClick={handleDeleteSubmit} className="admin-modal-btn admin-modal-btn--danger" disabled={isPending}>Delete User</button>
                         </div>
                     </div>
                 </div>

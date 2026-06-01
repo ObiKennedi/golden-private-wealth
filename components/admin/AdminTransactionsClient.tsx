@@ -43,6 +43,7 @@ interface User {
     emailVerified: boolean;
     createdAt: string;
     accounts: Account[];
+    totalLoanOwing: number;
 }
 
 interface Props {
@@ -124,8 +125,6 @@ function TxModal({ user, onClose }: { user: User; onClose: () => void }) {
         });
     }, [allTx, txSearch, typeFilter, statusFilter]);
 
-    const totalIn = filtered.filter(tx => CREDIT_TYPES.has(tx.type)).reduce((s, tx) => s + tx.amount, 0);
-    const totalOut = filtered.filter(tx => !CREDIT_TYPES.has(tx.type) && tx.type !== "TRANSFER").reduce((s, tx) => s + tx.amount, 0);
 
     return (
         <div className="tx-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Transactions for ${user.fullName}`}>
@@ -143,18 +142,31 @@ function TxModal({ user, onClose }: { user: User; onClose: () => void }) {
                     <div className="tx-modal__header-right">
                         <div className="tx-modal__stats">
                             <div className="tx-modal__stat">
-                                <span className="tx-modal__stat-label">In</span>
-                                <span className="tx-modal__stat-value tx-modal__stat-value--credit">+{fmt(totalIn)}</span>
+                                <span className="tx-modal__stat-label">Savings</span>
+                                <span className="tx-modal__stat-value tx-modal__stat-value--credit">
+                                    {fmt(user.accounts.find(a => a.type === "SAVINGS")?.balance ?? 0)}
+                                </span>
                             </div>
                             <div className="tx-modal__stat-div" />
                             <div className="tx-modal__stat">
-                                <span className="tx-modal__stat-label">Out</span>
-                                <span className="tx-modal__stat-value tx-modal__stat-value--debit">−{fmt(totalOut)}</span>
+                                <span className="tx-modal__stat-label">Checking</span>
+                                <span className="tx-modal__stat-value">
+                                    {fmt(user.accounts.find(a => a.type === "CHECKING")?.balance ?? 0)}
+                                </span>
                             </div>
                             <div className="tx-modal__stat-div" />
                             <div className="tx-modal__stat">
-                                <span className="tx-modal__stat-label">Count</span>
-                                <span className="tx-modal__stat-value">{filtered.length}</span>
+                                <span className="tx-modal__stat-label">Loan</span>
+                                <span className="tx-modal__stat-value tx-modal__stat-value--debit">
+                                    {fmt(user.totalLoanOwing)}
+                                </span>
+                            </div>
+                            <div className="tx-modal__stat-div" />
+                            <div className="tx-modal__stat">
+                                <span className="tx-modal__stat-label">Investment</span>
+                                <span className="tx-modal__stat-value" style={{ color: "var(--color-gold-400)" }}>
+                                    {fmt(user.accounts.find(a => a.type === "INVESTMENT")?.balance ?? 0)}
+                                </span>
                             </div>
                         </div>
                         <button className="tx-modal__close" onClick={onClose} aria-label="Close modal">

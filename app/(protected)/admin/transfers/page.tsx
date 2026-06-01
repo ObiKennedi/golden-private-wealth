@@ -9,9 +9,13 @@ import {
     XCircle,
     Calendar,
     User,
+    PiggyBank,
+    TrendingUp,
+    Lock,
 } from "lucide-react";
 import TransferActionButtons from "@/components/admin/TransferActionButtons";
-import "@/styles/admin/loans.scss"; // Reusing the layout and styling from loans
+import SavingsWithdrawalButtons from "@/components/admin/SavingsWithdrawalButtons";
+import "@/styles/admin/loans.scss";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
 
@@ -51,7 +55,7 @@ export default async function AdminTransfersPage() {
         redirect("/login");
     }
 
-    const transfers = await prisma.transfer.findMany({
+    const allTransfers = await prisma.transfer.findMany({
         orderBy: { createdAt: "desc" },
         include: {
             user: {
@@ -67,9 +71,28 @@ export default async function AdminTransfersPage() {
         },
     });
 
-    const pending = transfers.filter(t => t.status === "PENDING");
-    const resolved = transfers.filter(t => ["COMPLETED", "FAILED", "REJECTED"].includes(t.status));
+    // Split savings withdrawals from regular wire transfers
+    const savingsTransfers = allTransfers.filter(t => t.note?.startsWith("SAVINGS_WITHDRAWAL:"));
+    const wireTransfers = allTransfers.filter(t => !t.note?.startsWith("SAVINGS_WITHDRAWAL:"));
 
+    // Fetch savings locks for pending withdrawal transfers
+    const savingsLockIds = savingsTransfers
+        .map(t => t.note!.replace("SAVINGS_WITHDRAWAL:", ""))
+        .filter(Boolean);
+
+    const savingsLocks = savingsLockIds.length > 0
+        ? await prisma.savingsLock.findMany({
+            where: { id: { in: savingsLockIds } },
+            include: { user: { select: { fullName: true, email: true } } },
+          })
+        : [];
+
+    const lockMap = new Map(savingsLocks.map(l => [l.id, l]));
+
+    const pending = wireTransfers.filter(t => t.status === "PENDING");
+    const resolved = wireTransfers.filter(t => ["COMPLETED", "FAILED", "REJECTED"].includes(t.status));
+    const pendingSavings = savingsTransfers.filter(t => t.status === "PENDING");
+    const resolvedSavings = savingsTransfers.filter(t => ["COMPLETED", "REJECTED"].includes(t.status));
     const totalPendingVolume = pending.reduce((s, t) => s + Number(t.amount), 0);
 
     return (
@@ -79,23 +102,25 @@ export default async function AdminTransfersPage() {
             <header className="adminloans__header">
                 <div>
                     <p className="adminloans__pretitle">Payment Operations</p>
-                    <h1 className="adminloans__title">Wire Transfers</h1>
+                    <h1 className="adminloans__title">Transfers & Withdrawals</h1>
                 </div>
                 <div className="adminloans__summary">
                     <div className="adminloans__summary-item">
-                        <span className="adminloans__summary-label">Awaiting Approval</span>
+                        <span className="adminloans__summary-label">Wire Transfers Pending</span>
                         <span className="adminloans__summary-amount adminloans__summary-amount--amber">
                             {pending.length}
                         </span>
                     </div>
                     <div className="adminloans__summary-divider" aria-hidden="true" />
                     <div className="adminloans__summary-item">
-                        <span className="adminloans__summary-label">Processed Transfers</span>
-                        <span className="adminloans__summary-amount">{resolved.length}</span>
+                        <span className="adminloans__summary-label">Savings Withdrawals</span>
+                        <span className="adminloans__summary-amount adminloans__summary-amount--amber">
+                            {pendingSavings.length}
+                        </span>
                     </div>
                     <div className="adminloans__summary-divider" aria-hidden="true" />
                     <div className="adminloans__summary-item">
-                        <span className="adminloans__summary-label">Pending Volume</span>
+                        <span className="adminloans__summary-label">Pending Wire Volume</span>
                         <span className="adminloans__summary-amount adminloans__summary-amount--red">
                             {fmt(totalPendingVolume)}
                         </span>
@@ -103,11 +128,142 @@ export default async function AdminTransfersPage() {
                 </div>
             </header>
 
-            {/* ── Pending ── */}
-            {pending.length > 0 && (
-                <section className="adminloans__section" aria-label="Pending transfers">
+            {/* ══ SAVINGS WITHDRAWAL REQUESTS ══ */}
+            {pendingSavings.length > 0 && (
+                <section className="adminloans__section" aria-label="Pending savings withdrawals">
                     <h2 className="adminloans__section-title">
-                        Awaiting Action
+                        <PiggyBank size={16} style={{ color: "#34d399" }} />
+                        Savings Vault Withdrawals
+                        <span className="adminloans__section-count">{pendingSavings.length}</span>
+                    </h2>
+                    <div className="adminloans__cards">
+                        {pendingSavings.map(transfer => {
+                            const lockId = transfer.note!.replace("SAVINGS_WITHDRAWAL:", "");
+                            const lock = lockMap.get(lockId);
+                            const principal = lock ? Number(lock.amount) : 0;
+                            const interestRate = lock ? Number(lock.interestRatePerDay) : 0.01;
+                            const lockDays = lock?.lockDays ?? 0;
+                            const interest = +(principal * lockDays * interestRate).toFixed(2);
+                            const totalPayout = +(principal + interest).toFixed(2);
+
+                            return (
+                                <div
+                                    key={transfer.id}
+                                    className="adminloans__card adminloans__card--pending"
+                                    style={{ borderColor: "rgba(52,211,153,0.3)" }}
+                                >
+                                    <div className="adminloans__card-header">
+                                        <div className="adminloans__card-user">
+                                            <div className="adminloans__card-avatar" style={{ background: "rgba(52,211,153,0.15)", color: "#34d399" }}>
+                                                {transfer.user.fullName.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="adminloans__card-user-info">
+                                                <span className="adminloans__card-name">{transfer.user.fullName}</span>
+                                                <span className="adminloans__card-email">{transfer.user.email}</span>
+                                            </div>
+                                        </div>
+                                        <span className="adminloans__badge status--pending">
+                                            <Clock size={10} /> Savings Withdrawal
+                                        </span>
+                                    </div>
+
+                                    <div className="adminloans__card-body">
+                                        <div className="adminloans__card-amount">
+                                            <span className="adminloans__card-amount-label">Total Payout (Principal + Interest)</span>
+                                            <span className="adminloans__card-amount-value" style={{ color: "#34d399" }}>
+                                                {fmt(totalPayout, transfer.currency)}
+                                            </span>
+                                        </div>
+
+                                        <div className="adminloans__card-details">
+                                            <div className="adminloans__card-detail">
+                                                <Lock size={12} aria-hidden="true" />
+                                                <span>Principal: {fmt(principal, transfer.currency)}</span>
+                                            </div>
+                                            <div className="adminloans__card-detail">
+                                                <TrendingUp size={12} aria-hidden="true" />
+                                                <span>Interest: +{fmt(interest, transfer.currency)} ({lockDays} days @ 1%/day)</span>
+                                            </div>
+                                            <div className="adminloans__card-detail">
+                                                <Calendar size={12} aria-hidden="true" />
+                                                <span>
+                                                    Locked: {lock ? fmtDate(lock.lockedAt) : "—"} → Matured: {lock ? fmtDate(lock.unlocksAt) : "—"}
+                                                </span>
+                                            </div>
+                                            <div className="adminloans__card-detail">
+                                                <User size={12} aria-hidden="true" />
+                                                <span>Ref: {transfer.reference}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="adminloans__card-meta">
+                                        <span>Requested {fmtDate(transfer.createdAt)}</span>
+                                        <span>Lock ID: {lockId.slice(0, 12)}</span>
+                                    </div>
+
+                                    {lock ? (
+                                        <SavingsWithdrawalButtons
+                                            transferId={transfer.id}
+                                            lockId={lockId}
+                                            userName={transfer.user.fullName}
+                                            totalPayout={totalPayout}
+                                        />
+                                    ) : (
+                                        <p className="adminloans__no-account">
+                                            Cannot process — savings lock record not found.
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </section>
+            )}
+
+            {/* Resolved savings */}
+            {resolvedSavings.length > 0 && (
+                <section className="adminloans__section" aria-label="Resolved savings withdrawals">
+                    <h2 className="adminloans__section-title">
+                        <PiggyBank size={16} style={{ color: "var(--color-text-muted)" }} />
+                        Resolved Savings Withdrawals
+                    </h2>
+                    <ul className="adminloans__list" role="list">
+                        {resolvedSavings.map(transfer => {
+                            const meta = STATUS_META[transfer.status as keyof typeof STATUS_META] || STATUS_META.PENDING;
+                            const StatusIcon = meta.Icon;
+                            return (
+                                <li key={transfer.id} className="adminloans__item adminloans__item--muted">
+                                    <div className="adminloans__item-icon adminloans__item-icon--muted">
+                                        <PiggyBank size={15} aria-hidden="true" />
+                                    </div>
+                                    <div className="adminloans__item-info">
+                                        <span className="adminloans__item-name">{transfer.user.fullName} — Savings Withdrawal</span>
+                                        <span className="adminloans__item-meta">
+                                            Ref: {transfer.reference.slice(0, 14)} · {fmtDate(transfer.createdAt)}
+                                        </span>
+                                    </div>
+                                    <div className="adminloans__item-right">
+                                        <span className="adminloans__item-amount adminloans__item-amount--muted">
+                                            {fmt(transfer.amount, transfer.currency)}
+                                        </span>
+                                        <span className={`adminloans__badge ${meta.cls}`}>
+                                            <StatusIcon size={10} /> {meta.label}
+                                        </span>
+                                    </div>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </section>
+            )}
+
+            {/* ══ WIRE TRANSFERS ══ */}
+            {pending.length > 0 && (
+                <section className="adminloans__section" aria-label="Pending wire transfers">
+                    <h2 className="adminloans__section-title">
+                        <Send size={14} />
+                        Wire Transfers — Awaiting Action
                         <span className="adminloans__section-count">{pending.length}</span>
                     </h2>
                     <div className="adminloans__cards">
@@ -176,7 +332,6 @@ export default async function AdminTransfersPage() {
                                         <span>Ref: {transfer.reference.slice(0, 12).toUpperCase()}</span>
                                     </div>
 
-                                    {/* Action buttons — client component */}
                                     {checking && (
                                         <TransferActionButtons
                                             transferId={transfer.id}
@@ -198,10 +353,12 @@ export default async function AdminTransfersPage() {
                 </section>
             )}
 
-            {/* ── Resolved ── */}
+            {/* ── Resolved Wire Transfers ── */}
             {resolved.length > 0 && (
-                <section className="adminloans__section" aria-label="Resolved transfers">
-                    <h2 className="adminloans__section-title">Resolved</h2>
+                <section className="adminloans__section" aria-label="Resolved wire transfers">
+                    <h2 className="adminloans__section-title">
+                        <Send size={14} /> Resolved Wire Transfers
+                    </h2>
                     <ul className="adminloans__list" role="list">
                         {resolved.map(transfer => {
                             const meta = STATUS_META[transfer.status as keyof typeof STATUS_META] || STATUS_META.PENDING;
@@ -217,7 +374,7 @@ export default async function AdminTransfersPage() {
                                     <div className="adminloans__item-info">
                                         <span className="adminloans__item-name">{transfer.user.fullName} → {transfer.recipientName}</span>
                                         <span className="adminloans__item-meta">
-                                            {transfer.recipientBank} · Ref: {transfer.reference.slice(0,10)} · {fmtDate(transfer.createdAt)}
+                                            {transfer.recipientBank} · Ref: {transfer.reference.slice(0, 10)} · {fmtDate(transfer.createdAt)}
                                         </span>
                                     </div>
                                     <div className="adminloans__item-right">
@@ -244,10 +401,10 @@ export default async function AdminTransfersPage() {
                 </section>
             )}
 
-            {transfers.length === 0 && (
+            {allTransfers.length === 0 && (
                 <div className="adminloans__empty">
                     <Send size={32} aria-hidden="true" />
-                    <p>No wire transfers on record.</p>
+                    <p>No transfers on record.</p>
                 </div>
             )}
 

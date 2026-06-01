@@ -74,6 +74,13 @@ enum LoanType {
   LINE_OF_CREDIT
 }
 
+enum SavingsLockStatus {
+  LOCKED
+  PENDING_WITHDRAWAL
+  COMPLETED
+  REJECTED
+}
+
 model Loan {
   id              String     @id @default(uuid())
   referenceId     String     @unique @default(cuid())
@@ -98,6 +105,34 @@ model Loan {
   updatedAt DateTime @updatedAt
 
   @@map("loans")
+}
+
+model SavingsLock {
+  id                String            @id @default(uuid())
+  referenceId       String            @unique @default(cuid())
+  userId            String
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  savingsAccountId  String
+  savingsAccount    Account           @relation("SavingsLockAccount", fields: [savingsAccountId], references: [id])
+  checkingAccountId String
+  checkingAccount   Account           @relation("SavingsCheckingAccount", fields: [checkingAccountId], references: [id])
+
+  amount               Decimal           @db.Decimal(18, 2)
+  currency             String            @default("USD")
+  interestRatePerDay   Decimal           @default(0.01) @db.Decimal(5, 4)
+  lockDays             Int
+  lockedAt             DateTime          @default(now())
+  unlocksAt            DateTime
+
+  status               SavingsLockStatus @default(LOCKED)
+  withdrawalTransferId String?
+  settledAt            DateTime?
+  totalInterestPaid    Decimal?          @db.Decimal(18, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("savings_locks")
 }
 
 model Transfer {
@@ -138,6 +173,7 @@ model User {
   auditLogs    AuditLog[]
   loans        Loan[]
   transfers    Transfer[]
+  savingsLocks SavingsLock[]
 
   @@map("users")
 }
@@ -167,6 +203,8 @@ model Account {
 
   sentTransactions     Transaction[] @relation("SenderAccount")
   receivedTransactions Transaction[] @relation("ReceiverAccount")
+  savingsLocks         SavingsLock[] @relation("SavingsLockAccount")
+  checkingLocks        SavingsLock[] @relation("SavingsCheckingAccount")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

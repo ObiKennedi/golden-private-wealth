@@ -28,6 +28,10 @@ export default async function AdminTransactionsPage() {
             email: true,
             emailVerified: true,
             createdAt: true,
+            loans: {
+                where: { status: { in: ["ACTIVE", "APPROVED"] } },
+                select: { principalAmount: true },
+            },
             accounts: {
                 select: {
                     id: true,
@@ -85,6 +89,7 @@ export default async function AdminTransactionsPage() {
     const serialized = users.map(u => ({
         ...u,
         createdAt: u.createdAt.toISOString(),
+        totalLoanOwing: u.loans.reduce((s, l) => s + Number(l.principalAmount), 0),
         accounts: u.accounts.map(a => ({
             ...a,
             balance: Number(a.balance),

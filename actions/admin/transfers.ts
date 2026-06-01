@@ -188,3 +188,142 @@ export async function reverseTransferAction(prevState: any, formData: FormData) 
         return { globalError: "Failed to reverse transfer." };
     }
 }
+
+// ── Approve Savings Withdrawal ────────────────────────────────────────────────
+// Credits principal + interest to checking account, marks lock as COMPLETED.
+
+export async function approveSavingsWithdrawalAction(prevState: any, formData: FormData) {
+    if (!(await verifyAdmin())) return { globalError: "Unauthorized" };
+
+    const transferId = formData.get("transferId") as string;
+    const lockId = formData.get("lockId") as string;
+    if (!transferId || !lockId) return { globalError: "Missing required parameters." };
+
+    try {
+        const lock = await prisma.savingsLock.findUnique({
+            where: { id: lockId },
+            include: {
+                user: { select: { fullName: true } },
+                savingsAccount: true,
+                checkingAccount: true,
+            },
+        });
+
+        if (!lock) return { globalError: "Savings lock not found." };
+        if (lock.status !== "PENDING_WITHDRAWAL") {
+            return { globalError: "This lock is not awaiting withdrawal." };
+        }
+
+        const principal = Number(lock.amount);
+        const interest = +(principal * lock.lockDays * Number(lock.interestRatePerDay)).toFixed(2);
+        const totalPayout = +(principal + interest).toFixed(2);
+
+        await prisma.$transaction(async (tx) => {
+            // Deduct from savings
+            await tx.account.update({
+                where: { id: lock.savingsAccountId },
+                data: { balance: { decrement: principal } },
+            });
+
+            // Credit principal + interest to checking
+            await tx.account.update({
+                where: { id: lock.checkingAccountId },
+                data: { balance: { increment: totalPayout } },
+            });
+
+            // Mark transfer as completed
+            await tx.transfer.update({
+                where: { id: transferId },
+                data: { status: "COMPLETED" },
+            });
+
+            // Mark lock as completed
+            await tx.savingsLock.update({
+                where: { id: lockId },
+                data: {
+                    status: "COMPLETED",
+                    settledAt: new Date(),
+                    totalInterestPaid: interest,
+                },
+            });
+
+            // Create transaction record
+            await tx.transaction.create({
+                data: {
+                    referenceId: `SAVW-${lock.referenceId.slice(0, 10)}`,
+                    type: "YIELD_PAYOUT",
+                    status: "COMPLETED",
+                    amount: totalPayout,
+                    currency: lock.currency,
+                    description: `Savings lock payout: $${principal} principal + $${interest} interest (${lock.lockDays} days @ 1%/day)`,
+                    senderAccountId: lock.savingsAccountId,
+                    receiverAccountId: lock.checkingAccountId,
+                },
+            });
+
+            // Audit log
+            await tx.auditLog.create({
+                data: {
+                    action: "SAVINGS_WITHDRAWAL_APPROVED",
+                    userId: lock.userId,
+                    metadata: {
+                        lockId,
+                        principal,
+                        interest,
+                        totalPayout,
+                        lockDays: lock.lockDays,
+                        userName: lock.user.fullName,
+                    },
+                },
+            });
+        });
+
+        return { success: true };
+    } catch (err: any) {
+        console.error("[approveSavingsWithdrawalAction]", err);
+        return { globalError: "Failed to approve savings withdrawal." };
+    }
+}
+
+// ── Reject Savings Withdrawal ─────────────────────────────────────────────────
+// Resets lock back to LOCKED — user can re-request when ready.
+
+export async function rejectSavingsWithdrawalAction(prevState: any, formData: FormData) {
+    if (!(await verifyAdmin())) return { globalError: "Unauthorized" };
+
+    const transferId = formData.get("transferId") as string;
+    const lockId = formData.get("lockId") as string;
+    if (!transferId || !lockId) return { globalError: "Missing required parameters." };
+
+    try {
+        await prisma.$transaction(async (tx) => {
+            // Reset lock back to LOCKED so user can re-request
+            await tx.savingsLock.update({
+                where: { id: lockId },
+                data: {
+                    status: "LOCKED",
+                    withdrawalTransferId: null,
+                },
+            });
+
+            // Mark transfer as rejected
+            await tx.transfer.update({
+                where: { id: transferId },
+                data: { status: "REJECTED" },
+            });
+
+            // Audit log
+            await tx.auditLog.create({
+                data: {
+                    action: "SAVINGS_WITHDRAWAL_REJECTED",
+                    metadata: { lockId, transferId },
+                },
+            });
+        });
+
+        return { success: true };
+    } catch (err: any) {
+        console.error("[rejectSavingsWithdrawalAction]", err);
+        return { globalError: "Failed to reject savings withdrawal." };
+    }
+}

@@ -70,6 +70,8 @@ interface AssetsClientProps {
     totalLoanExposure: number;
 }
 
+import Link from "next/link";
+
 export function AssetsClient({
     accounts,
     loans,
@@ -124,8 +126,11 @@ export function AssetsClient({
                         {accounts.map(acct => {
                             const meta = (ACCOUNT_META as any)[acct.type] ?? ACCOUNT_META.CHECKING;
                             const Icon = meta.Icon;
-                            return (
-                                <div key={acct.id} className={`assetspage__acct-card ${meta.cls}`}>
+                            const isChecking = acct.type === "CHECKING";
+                            const isSavings = acct.type === "SAVINGS";
+
+                            const cardContent = (
+                                <>
                                     <div className="assetspage__acct-top">
                                         <div className="assetspage__acct-icon">
                                             <Icon size={18} aria-hidden="true" />
@@ -147,6 +152,38 @@ export function AssetsClient({
                                     <span className="assetspage__acct-since">
                                         Since {fmtDate(acct.createdAt)}
                                     </span>
+                                </>
+                            );
+
+                            if (isChecking) {
+                                return (
+                                    <Link
+                                        key={acct.id}
+                                        href="/user"
+                                        className={`assetspage__acct-card ${meta.cls} assetspage__acct-card--link`}
+                                        style={{ textDecoration: "none" }}
+                                    >
+                                        {cardContent}
+                                    </Link>
+                                );
+                            }
+
+                            if (isSavings) {
+                                return (
+                                    <Link
+                                        key={acct.id}
+                                        href="/user/savings"
+                                        className={`assetspage__acct-card ${meta.cls} assetspage__acct-card--link`}
+                                        style={{ textDecoration: "none" }}
+                                    >
+                                        {cardContent}
+                                    </Link>
+                                );
+                            }
+
+                            return (
+                                <div key={acct.id} className={`assetspage__acct-card ${meta.cls}`}>
+                                    {cardContent}
                                 </div>
                             );
                         })}
