@@ -34,6 +34,7 @@ const BANKS = [
     { group: "US Credit Unions", value: "PENFED", label: "PenFed Credit Union" },
     { group: "US Credit Unions", value: "BECU", label: "BECU" },
     { group: "US Credit Unions", value: "SCHOOLS_FIRST", label: "SchoolsFirst FCU" },
+    {group: "US Credit Unions", value: "ADDITION_FINANCIAL", label: "Addition Financial Credit Union" },
     // ── US Fintech / Neo-banks ──
     { group: "US Fintech & Neo-banks", value: "CHIME", label: "Chime" },
     { group: "US Fintech & Neo-banks", value: "SOFI", label: "SoFi" },
