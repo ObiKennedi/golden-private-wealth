@@ -16,8 +16,8 @@ interface BalanceCardProps {
     credit?: AccountData;
 }
 
-function fmt(val: number, currency = "USD") {
-    return new Intl.NumberFormat("en-US", {
+function fmt(val: number, currency = "GBP") {
+    return new Intl.NumberFormat("en-GB", {
         style: "currency",
         currency,
         minimumFractionDigits: 2,

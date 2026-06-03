@@ -1,504 +1,674 @@
-"use client";
+"use client"
 
-import { useState, useMemo } from "react";
+import { useState, useTransition, useMemo } from "react"
+import { useRouter } from "next/navigation"
 import {
-    Search, X, ArrowDownLeft, ArrowUpRight, ArrowLeftRight,
-    Filter, Users, Activity, DollarSign, ChevronDown, type LucideIcon,
-} from "lucide-react";
+    Search, ChevronDown, ChevronUp, BadgeCheck,
+    Users, DollarSign, TrendingUp, X, Wallet,
+    Edit, ShieldAlert, Trash2, AlertCircle
+} from "lucide-react"
+import { updateAccountBalanceAction } from "@/actions/admin"
+import { updateUserAction, suspendUserAction, unsuspendUserAction, deleteUserAction } from "@/actions/admin/users"
 
-// ── Types ──────────────────────────────────────────────────────────────────
-
-type TxType = "DEPOSIT" | "WITHDRAWAL" | "TRANSFER" | "YIELD_PAYOUT" | "ASSET_PURCHASE" | "ASSET_SALE";
-type TxStatus = "PENDING" | "COMPLETED" | "FAILED" | "REJECTED";
-type Direction = "credit" | "debit";
-
-interface Tx {
-    id: string;
-    referenceId: string;
-    type: TxType;
-    status: TxStatus;
-    amount: number;
-    currency: string;
-    description: string | null;
-    createdAt: string;
-    direction: Direction;
-    senderAccount?: { accountNumber: string; user?: { fullName: string } | null } | null;
-    receiverAccount?: { accountNumber: string; user?: { fullName: string } | null } | null;
-}
+type AccountType = "CHECKING" | "SAVINGS" | "INVESTMENT" | "CREDIT"
+type BalancePreset =
+    | { label: string; delta: number; absolute?: never }
+    | { label: string; absolute: number; delta?: never }
 
 interface Account {
-    id: string;
-    type: string;
-    accountNumber: string;
-    balance: number;
-    currency: string;
-    sentTransactions: Tx[];
-    receivedTransactions: Tx[];
+    id: string
+    type: AccountType
+    currency: string
+    balance: number
+    accountNumber: string
 }
 
 interface User {
-    id: string;
-    fullName: string;
-    email: string;
-    emailVerified: boolean;
-    createdAt: string;
-    accounts: Account[];
-    totalLoanOwing: number;
+    id: string
+    fullName: string
+    email: string
+    accountNumber: string
+    ssn: string
+    status: string
+    suspendedUntil: string | null
+    role: string
+    emailVerified: boolean
+    avatarUrl: string | null
+    createdAt: string
+    accounts: Account[]
+    _count: { transfers: number; loans: number }
 }
 
 interface Props {
-    users: User[];
-    totalVolume: number;
-    totalTxCount: number;
+    users: User[]
+    totalAUM: number
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
+    CHECKING: "Checking",
+    SAVINGS: "Savings",
+    INVESTMENT: "Investment",
+    CREDIT: "Credit",
+}
+
+const ACCOUNT_TYPE_COLORS: Record<AccountType, string> = {
+    CHECKING: "type--checking",
+    SAVINGS: "type--savings",
+    INVESTMENT: "type--investment",
+    CREDIT: "type--credit",
+}
+
+const BALANCE_PRESETS: BalancePreset[] = [
+    { label: "+ £1,000", delta: 1_000 },
+    { label: "+ £5,000", delta: 5_000 },
+    { label: "+ £10,000", delta: 10_000 },
+    { label: "+ £50,000", delta: 50_000 },
+    { label: "+ £100,000", delta: 100_000 },
+    { label: "+ $500,000", delta: 500_000 },
+    { label: "+ $1,000,000", delta: 1_000_000 },
+    { label: "− $1,000", delta: -1_000 },
+    { label: "− $5,000", delta: -5_000 },
+    { label: "− $10,000", delta: -10_000 },
+    { label: "− $50,000", delta: -50_000 },
+    { label: "Set to $0", absolute: 0 },
+]
 
 function fmt(n: number, currency = "USD") {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2 }).format(n);
+    return new Intl.NumberFormat("en-US", {
+        style: "currency", currency, minimumFractionDigits: 2
+    }).format(n)
 }
 
 function fmtDate(iso: string) {
-    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(iso));
-}
-
-function timeAgo(iso: string) {
-    const diff = Date.now() - new Date(iso).getTime();
-    const m = Math.floor(diff / 60000);
-    if (m < 60) return `${m}m ago`;
-    const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h / 24)}d ago`;
+    return new Intl.DateTimeFormat("en-US", {
+        month: "short", day: "numeric", year: "numeric"
+    }).format(new Date(iso))
 }
 
 function initials(name: string) {
-    const p = name.trim().split(" ");
-    return p.length >= 2 ? `${p[0][0]}${p[p.length - 1][0]}`.toUpperCase() : name.slice(0, 2).toUpperCase();
+    const p = name.trim().split(" ")
+    return p.length >= 2
+        ? `${p[0][0]}${p[p.length - 1][0]}`.toUpperCase()
+        : name.slice(0, 2).toUpperCase()
 }
 
-const CREDIT_TYPES = new Set<TxType>(["DEPOSIT", "YIELD_PAYOUT", "ASSET_SALE"]);
-const TX_ICON: Record<TxType, LucideIcon> = {
-    DEPOSIT: ArrowDownLeft, WITHDRAWAL: ArrowUpRight, TRANSFER: ArrowLeftRight,
-    YIELD_PAYOUT: ArrowDownLeft, ASSET_PURCHASE: ArrowUpRight, ASSET_SALE: ArrowDownLeft,
-};
+export default function AdminUsersClient({ users: initialUsers, totalAUM }: Props) {
+    const router = useRouter()
+    const [users, setUsers] = useState(initialUsers)
+    const [search, setSearch] = useState("")
+    const [sortField, setSortField] = useState<"createdAt" | "fullName">("createdAt")
+    const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
+    const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
-const STATUS_CLS: Record<TxStatus, string> = {
-    COMPLETED: "badge--success", PENDING: "badge--pending",
-    FAILED: "badge--error", REJECTED: "badge--error",
-};
+    // Per-user dropdown state
+    const [selectedAccount, setSelectedAccount] = useState<Record<string, string>>({})
+    const [customAmount, setCustomAmount] = useState<Record<string, string>>({})
+    const [customMode, setCustomMode] = useState<Record<string, "add" | "subtract" | "set">>({})
+    const [isPending, startTransition] = useTransition()
+    const [feedbacks, setFeedbacks] = useState<Record<string, { text: string; accountId: string }>>({})
+    const [errors, setErrors] = useState<Record<string, string>>({})
 
-const TX_TYPES: TxType[] = ["DEPOSIT", "WITHDRAWAL", "TRANSFER", "YIELD_PAYOUT", "ASSET_PURCHASE", "ASSET_SALE"];
-const TX_STATUSES: TxStatus[] = ["PENDING", "COMPLETED", "FAILED", "REJECTED"];
+    // Modal states
+    const [editUser, setEditUser] = useState<User | null>(null)
+    const [editForm, setEditForm] = useState({ fullName: "", email: "", ssn: "", avatarUrl: "" })
+    const [editError, setEditError] = useState("")
 
-// ── Transaction Modal ───────────────────────────────────────────────────────
+    const [suspendUser, setSuspendUser] = useState<User | null>(null)
+    const [suspendDays, setSuspendDays] = useState("7")
+    const [suspendError, setSuspendError] = useState("")
 
-function TxModal({ user, onClose }: { user: User; onClose: () => void }) {
-    const [txSearch, setTxSearch] = useState("");
-    const [typeFilter, setTypeFilter] = useState<TxType | "ALL">("ALL");
-    const [statusFilter, setStatusFilter] = useState<TxStatus | "ALL">("ALL");
-    const [showFilters, setShowFilters] = useState(false);
+    const [deleteUser, setDeleteUser] = useState<User | null>(null)
+    const [deleteError, setDeleteError] = useState("")
 
-    // Merge all transactions from all accounts
-    const allTx = useMemo<Tx[]>(() => {
-        const merged: Tx[] = [];
-        for (const acct of user.accounts) {
-            merged.push(...acct.sentTransactions, ...acct.receivedTransactions);
-        }
-        // Deduplicate by id and sort by date desc
-        const seen = new Set<string>();
-        return merged
-            .filter(tx => { if (seen.has(tx.id)) return false; seen.add(tx.id); return true; })
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    }, [user.accounts]);
+    const verifiedCount = useMemo(() => users.filter((u) => u.emailVerified).length, [users])
 
     const filtered = useMemo(() => {
-        const q = txSearch.toLowerCase();
-        return allTx.filter(tx => {
-            const matchSearch = !q
-                || tx.type.toLowerCase().includes(q)
-                || tx.referenceId.toLowerCase().includes(q)
-                || (tx.description ?? "").toLowerCase().includes(q)
-                || tx.amount.toString().includes(q);
-            const matchType = typeFilter === "ALL" || tx.type === typeFilter;
-            const matchStatus = statusFilter === "ALL" || tx.status === statusFilter;
-            return matchSearch && matchType && matchStatus;
-        });
-    }, [allTx, txSearch, typeFilter, statusFilter]);
-
-
-    return (
-        <div className="tx-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Transactions for ${user.fullName}`}>
-            <div className="tx-modal" onClick={e => e.stopPropagation()}>
-
-                {/* Modal header */}
-                <div className="tx-modal__header">
-                    <div className="tx-modal__user">
-                        <div className="tx-modal__avatar">{initials(user.fullName)}</div>
-                        <div>
-                            <h2 className="tx-modal__name">{user.fullName}</h2>
-                            <p className="tx-modal__email">{user.email}</p>
-                        </div>
-                    </div>
-                    <div className="tx-modal__header-right">
-                        <div className="tx-modal__stats">
-                            <div className="tx-modal__stat">
-                                <span className="tx-modal__stat-label">Savings</span>
-                                <span className="tx-modal__stat-value tx-modal__stat-value--credit">
-                                    {fmt(user.accounts.find(a => a.type === "SAVINGS")?.balance ?? 0)}
-                                </span>
-                            </div>
-                            <div className="tx-modal__stat-div" />
-                            <div className="tx-modal__stat">
-                                <span className="tx-modal__stat-label">Checking</span>
-                                <span className="tx-modal__stat-value">
-                                    {fmt(user.accounts.find(a => a.type === "CHECKING")?.balance ?? 0)}
-                                </span>
-                            </div>
-                            <div className="tx-modal__stat-div" />
-                            <div className="tx-modal__stat">
-                                <span className="tx-modal__stat-label">Loan</span>
-                                <span className="tx-modal__stat-value tx-modal__stat-value--debit">
-                                    {fmt(user.totalLoanOwing)}
-                                </span>
-                            </div>
-                            <div className="tx-modal__stat-div" />
-                            <div className="tx-modal__stat">
-                                <span className="tx-modal__stat-label">Investment</span>
-                                <span className="tx-modal__stat-value" style={{ color: "var(--color-gold-400)" }}>
-                                    {fmt(user.accounts.find(a => a.type === "INVESTMENT")?.balance ?? 0)}
-                                </span>
-                            </div>
-                        </div>
-                        <button className="tx-modal__close" onClick={onClose} aria-label="Close modal">
-                            <X size={16} />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Toolbar */}
-                <div className="tx-modal__toolbar">
-                    <div className="tx-modal__search-wrap">
-                        <Search size={13} className="tx-modal__search-icon" aria-hidden="true" />
-                        <input
-                            className="tx-modal__search"
-                            type="search"
-                            placeholder="Search by type, ref, description…"
-                            value={txSearch}
-                            onChange={e => setTxSearch(e.target.value)}
-                        />
-                        {txSearch && (
-                            <button className="tx-modal__search-clear" onClick={() => setTxSearch("")} aria-label="Clear">
-                                <X size={11} />
-                            </button>
-                        )}
-                    </div>
-                    <button
-                        className={`tx-modal__filter-toggle ${showFilters ? "active" : ""}`}
-                        onClick={() => setShowFilters(p => !p)}
-                    >
-                        <Filter size={13} aria-hidden="true" />
-                        Filters
-                        {(typeFilter !== "ALL" || statusFilter !== "ALL") && (
-                            <span className="tx-modal__filter-dot" aria-hidden="true" />
-                        )}
-                    </button>
-                </div>
-
-                {/* Filters */}
-                {showFilters && (
-                    <div className="tx-modal__filters">
-                        <div className="tx-modal__filter-group">
-                            <label className="tx-modal__filter-label">Type</label>
-                            <div className="tx-modal__filter-chips">
-                                <button
-                                    className={`tx-modal__chip ${typeFilter === "ALL" ? "active" : ""}`}
-                                    onClick={() => setTypeFilter("ALL")}
-                                >All</button>
-                                {TX_TYPES.map(t => (
-                                    <button
-                                        key={t}
-                                        className={`tx-modal__chip ${typeFilter === t ? "active" : ""}`}
-                                        onClick={() => setTypeFilter(t)}
-                                    >
-                                        {t.replace(/_/g, " ")}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="tx-modal__filter-group">
-                            <label className="tx-modal__filter-label">Status</label>
-                            <div className="tx-modal__filter-chips">
-                                <button
-                                    className={`tx-modal__chip ${statusFilter === "ALL" ? "active" : ""}`}
-                                    onClick={() => setStatusFilter("ALL")}
-                                >All</button>
-                                {TX_STATUSES.map(s => (
-                                    <button
-                                        key={s}
-                                        className={`tx-modal__chip tx-modal__chip--${s.toLowerCase()} ${statusFilter === s ? "active" : ""}`}
-                                        onClick={() => setStatusFilter(s)}
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                        {(typeFilter !== "ALL" || statusFilter !== "ALL") && (
-                            <button
-                                className="tx-modal__clear-filters"
-                                onClick={() => { setTypeFilter("ALL"); setStatusFilter("ALL"); }}
-                            >
-                                <X size={11} /> Clear filters
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {/* Transaction list */}
-                <div className="tx-modal__list-wrap">
-                    {filtered.length === 0 ? (
-                        <div className="tx-modal__empty">
-                            <Activity size={24} aria-hidden="true" />
-                            <p>No transactions match your filters.</p>
-                        </div>
-                    ) : (
-                        <ul className="tx-modal__list" role="list">
-                            {filtered.map(tx => {
-                                const isCredit = CREDIT_TYPES.has(tx.type);
-                                const isNeutral = tx.type === "TRANSFER";
-                                const Icon = TX_ICON[tx.type] ?? ArrowLeftRight;
-                                const counterparty = isCredit
-                                    ? tx.senderAccount?.user?.fullName ?? tx.senderAccount?.accountNumber ?? "External"
-                                    : tx.receiverAccount?.user?.fullName ?? tx.receiverAccount?.accountNumber ?? "External";
-
-                                return (
-                                    <li key={tx.id} className="tx-modal__item">
-                                        <div className={`tx-modal__item-icon ${isCredit ? "icon--credit" : isNeutral ? "icon--neutral" : "icon--debit"}`}>
-                                            <Icon size={14} aria-hidden="true" />
-                                        </div>
-                                        <div className="tx-modal__item-body">
-                                            <div className="tx-modal__item-top">
-                                                <span className="tx-modal__item-desc">
-                                                    {tx.description ?? tx.type.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase())}
-                                                </span>
-                                                <span className={`tx-modal__item-amount ${isCredit ? "amount--credit" : isNeutral ? "amount--neutral" : "amount--debit"}`}>
-                                                    {isCredit ? "+" : isNeutral ? "" : "−"}{fmt(tx.amount, tx.currency)}
-                                                </span>
-                                            </div>
-                                            <div className="tx-modal__item-bottom">
-                                                <span className="tx-modal__item-meta">
-                                                    {counterparty} · {timeAgo(tx.createdAt)}
-                                                </span>
-                                                <span className="tx-modal__item-ref">
-                                                    {tx.referenceId.slice(0, 10).toUpperCase()}
-                                                </span>
-                                                <span className={`tx-modal__badge ${STATUS_CLS[tx.status]}`}>
-                                                    {tx.status}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    )}
-                </div>
-
-            </div>
-        </div>
-    );
-}
-
-// ── Main Component ──────────────────────────────────────────────────────────
-
-export default function AdminTransactionsClient({ users, totalVolume, totalTxCount }: Props) {
-    const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState<"ALL" | "verified" | "unverified">("ALL");
-    const [sortBy, setSortBy] = useState<"name" | "joined" | "txCount">("txCount");
-    const [selectedUser, setSelectedUser] = useState<User | null>(null);
-    const [showSort, setShowSort] = useState(false);
-
-    const enriched = useMemo(() => users.map(u => {
-        const txCount = u.accounts.reduce((s, a) =>
-            s + a.sentTransactions.length + a.receivedTransactions.length, 0);
-        const totalBalance = u.accounts.reduce((s, a) => s + a.balance, 0);
-        return { ...u, txCount, totalBalance };
-    }), [users]);
-
-    const filtered = useMemo(() => {
-        const q = search.toLowerCase();
-        return [...enriched]
-            .filter(u => {
-                const matchSearch = !q
-                    || u.fullName.toLowerCase().includes(q)
-                    || u.email.toLowerCase().includes(q);
-                const matchStatus = statusFilter === "ALL"
-                    || (statusFilter === "verified" && u.emailVerified)
-                    || (statusFilter === "unverified" && !u.emailVerified);
-                return matchSearch && matchStatus;
-            })
+        const q = search.toLowerCase()
+        return [...users]
+            .filter((u) =>
+                u.fullName.toLowerCase().includes(q) ||
+                u.email.toLowerCase().includes(q) ||
+                u.accountNumber.toLowerCase().includes(q)
+            )
             .sort((a, b) => {
-                if (sortBy === "name") return a.fullName.localeCompare(b.fullName);
-                if (sortBy === "joined") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-                if (sortBy === "txCount") return b.txCount - a.txCount;
-                return 0;
-            });
-    }, [enriched, search, statusFilter, sortBy]);
+                let cmp = 0
+                if (sortField === "fullName") cmp = a.fullName.localeCompare(b.fullName)
+                if (sortField === "createdAt") cmp = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+                return sortDir === "asc" ? cmp : -cmp
+            })
+    }, [users, search, sortField, sortDir])
 
-    const SORT_LABELS: Record<typeof sortBy, string> = {
-        txCount: "Most Active", name: "Name A–Z", joined: "Newest First",
-    };
+    const toggleSort = (field: typeof sortField) => {
+        if (sortField === field) setSortDir((d) => d === "asc" ? "desc" : "asc")
+        else { setSortField(field); setSortDir("desc") }
+    }
+
+    const SortIcon = ({ field }: { field: typeof sortField }) =>
+        sortField === field
+            ? (sortDir === "asc" ? <ChevronUp size={12} /> : <ChevronDown size={12} />)
+            : <ChevronDown size={12} className="sort-icon--inactive" />
+
+    const getActiveAccount = (user: User): Account | null => {
+        if (!user.accounts.length) return null
+        const id = selectedAccount[user.id]
+        return user.accounts.find((a) => a.id === id) ?? user.accounts[0]
+    }
+
+    const applyBalance = (userId: string, accountId: string, newBalance: number) => {
+        if (newBalance < 0) {
+            setErrors((p) => ({ ...p, [userId]: "Balance cannot go below $0." }))
+            return
+        }
+        setErrors((p) => ({ ...p, [userId]: "" }))
+
+        startTransition(async () => {
+            const result = await updateAccountBalanceAction(accountId, newBalance)
+            if (result?.error) {
+                setErrors((p) => ({ ...p, [userId]: result.error }))
+                return
+            }
+            setUsers((prev) => prev.map((u) =>
+                u.id !== userId ? u : {
+                    ...u,
+                    accounts: u.accounts.map((a) =>
+                        a.id === accountId ? { ...a, balance: newBalance } : a
+                    )
+                }
+            ))
+            setFeedbacks((p) => ({ ...p, [userId]: { text: fmt(newBalance), accountId } }))
+            setOpenDropdown(null)
+            setTimeout(() => setFeedbacks((p) => ({ ...p, [userId]: { text: "", accountId: "" } })), 3000)
+            router.refresh()
+        })
+    }
+
+    const handlePreset = (user: User, preset: BalancePreset) => {
+        const account = getActiveAccount(user)
+        if (!account) return
+        const next = preset.absolute !== undefined ? preset.absolute : account.balance + preset.delta
+        applyBalance(user.id, account.id, next)
+    }
+
+    const handleCustomSubmit = (user: User) => {
+        const account = getActiveAccount(user)
+        if (!account) return
+        const raw = parseFloat(customAmount[user.id] ?? "")
+        const mode = customMode[user.id] ?? "add"
+        if (isNaN(raw) || raw < 0) {
+            setErrors((p) => ({ ...p, [user.id]: "Enter a valid positive number." }))
+            return
+        }
+        let next = account.balance
+        if (mode === "add") next = account.balance + raw
+        if (mode === "subtract") next = account.balance - raw
+        if (mode === "set") next = raw
+        applyBalance(user.id, account.id, next)
+    }
+
+    const handleEditSubmit = () => {
+        if (!editUser) return
+        setEditError("")
+        startTransition(async () => {
+            const result = await updateUserAction(editUser.id, editForm)
+            if (result.error) {
+                setEditError(result.error)
+            } else {
+                setUsers(users.map(u => u.id === editUser.id ? { ...u, ...editForm } : u))
+                setEditUser(null)
+                router.refresh()
+            }
+        })
+    }
+
+    const handleSuspendSubmit = () => {
+        if (!suspendUser) return
+        setSuspendError("")
+        const days = parseInt(suspendDays)
+        if (isNaN(days) || days <= 0) {
+            setSuspendError("Please enter a valid number of days.")
+            return
+        }
+        startTransition(async () => {
+            const result = await suspendUserAction(suspendUser.id, days)
+            if (result.error) {
+                setSuspendError(result.error)
+            } else {
+                setUsers(users.map(u => u.id === suspendUser.id ? { ...u, status: "SUSPENDED" } : u)) // suspendedUntil doesn't need to be strictly mapped if we refresh
+                setSuspendUser(null)
+                router.refresh()
+            }
+        })
+    }
+
+    const handleUnsuspend = () => {
+        if (!suspendUser) return
+        setSuspendError("")
+        startTransition(async () => {
+            const result = await unsuspendUserAction(suspendUser.id)
+            if (result.error) {
+                setSuspendError(result.error)
+            } else {
+                setUsers(users.map(u => u.id === suspendUser.id ? { ...u, status: "ACTIVE", suspendedUntil: null } : u))
+                setSuspendUser(null)
+                router.refresh()
+            }
+        })
+    }
+
+    const handleDeleteSubmit = () => {
+        if (!deleteUser) return
+        setDeleteError("")
+        startTransition(async () => {
+            const result = await deleteUserAction(deleteUser.id)
+            if (result.error) {
+                setDeleteError(result.error)
+            } else {
+                setUsers(users.filter(u => u.id !== deleteUser.id))
+                setDeleteUser(null)
+                router.refresh()
+            }
+        })
+    }
 
     return (
-        <div className="admintx">
-
+        <div className="adminusers__inner">
             {/* ── Header ── */}
-            <header className="admintx__header">
+            <header className="adminusers__header">
                 <div>
-                    <p className="admintx__pretitle">Financial Operations</p>
-                    <h1 className="admintx__title">Transactions</h1>
+                    <p className="adminusers__pretitle">Administration</p>
+                    <h1 className="adminusers__title">User Management</h1>
                 </div>
-                <div className="admintx__summary">
-                    <div className="admintx__summary-item">
-                        <span className="admintx__summary-label">Total Volume</span>
-                        <span className="admintx__summary-amount admintx__summary-amount--gold">
-                            {fmt(totalVolume)}
-                        </span>
+                <div className="adminusers__header-stats">
+                    <div className="adminusers__hstat">
+                        <Users size={13} aria-hidden />
+                        <span>{users.length} clients</span>
                     </div>
-                    <div className="admintx__summary-div" />
-                    <div className="admintx__summary-item">
-                        <span className="admintx__summary-label">All Transactions</span>
-                        <span className="admintx__summary-amount">{totalTxCount.toLocaleString()}</span>
+                    <div className="adminusers__hstat">
+                        <BadgeCheck size={13} aria-hidden />
+                        <span>{verifiedCount} verified</span>
                     </div>
-                    <div className="admintx__summary-div" />
-                    <div className="admintx__summary-item">
-                        <span className="admintx__summary-label">Clients</span>
-                        <span className="admintx__summary-amount">{users.length}</span>
+                    <div className="adminusers__hstat adminusers__hstat--gold">
+                        <DollarSign size={13} aria-hidden />
+                        <span>{fmt(totalAUM)} total AUM</span>
                     </div>
                 </div>
             </header>
 
             {/* ── Toolbar ── */}
-            <div className="admintx__toolbar">
-                <div className="admintx__search-wrap">
-                    <Search size={14} className="admintx__search-icon" aria-hidden="true" />
+            <div className="adminusers__toolbar">
+                <div className="adminusers__search-wrap">
+                    <Search size={14} className="adminusers__search-icon" aria-hidden />
                     <input
-                        className="admintx__search"
+                        className="adminusers__search"
                         type="search"
-                        placeholder="Search clients by name or email…"
+                        placeholder="Search by name, email or account…"
                         value={search}
-                        onChange={e => setSearch(e.target.value)}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
                     {search && (
-                        <button className="admintx__search-clear" onClick={() => setSearch("")} aria-label="Clear">
+                        <button className="adminusers__search-clear" onClick={() => setSearch("")} aria-label="Clear">
                             <X size={12} />
                         </button>
                     )}
                 </div>
-
-                {/* Status filter chips */}
-                <div className="admintx__chips">
-                    {(["ALL", "verified", "unverified"] as const).map(s => (
+                <div className="adminusers__sort-strip">
+                    <span className="adminusers__sort-label">Sort:</span>
+                    {(["fullName", "createdAt"] as const).map((f) => (
                         <button
-                            key={s}
-                            className={`admintx__chip ${statusFilter === s ? "active" : ""}`}
-                            onClick={() => setStatusFilter(s)}
+                            key={f}
+                            className={`adminusers__sort-btn${sortField === f ? " active" : ""}`}
+                            onClick={() => toggleSort(f)}
                         >
-                            {s === "ALL" ? "All Clients" : s === "verified" ? "Verified" : "Unverified"}
+                            {f === "fullName" ? "Name" : "Joined"}
+                            <SortIcon field={f} />
                         </button>
                     ))}
                 </div>
-
-                {/* Sort dropdown */}
-                <div className="admintx__sort-wrap">
-                    <button
-                        className="admintx__sort-btn"
-                        onClick={() => setShowSort(p => !p)}
-                        aria-expanded={showSort}
-                    >
-                        {SORT_LABELS[sortBy]}
-                        <ChevronDown size={12} aria-hidden="true" />
-                    </button>
-                    {showSort && (
-                        <div className="admintx__sort-menu">
-                            {(["txCount", "name", "joined"] as const).map(opt => (
-                                <button
-                                    key={opt}
-                                    className={`admintx__sort-option ${sortBy === opt ? "active" : ""}`}
-                                    onClick={() => { setSortBy(opt); setShowSort(false); }}
-                                >
-                                    {SORT_LABELS[opt]}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
             </div>
 
-            {/* ── User Grid ── */}
+            {/* ── Table ── */}
             {filtered.length === 0 ? (
-                <div className="admintx__empty">
-                    <Users size={28} aria-hidden="true" />
-                    <p>No clients match your search.</p>
+                <div className="adminusers__empty">
+                    <Users size={28} aria-hidden />
+                    <p>No users match your search.</p>
                 </div>
             ) : (
-                <>
-                    <p className="admintx__count">
-                        {filtered.length} of {users.length} clients
-                    </p>
-                    <div className="admintx__grid">
-                        {filtered.map(user => (
-                            <button
-                                key={user.id}
-                                className="admintx__user-card"
-                                onClick={() => setSelectedUser(user)}
-                                aria-label={`View transactions for ${user.fullName}`}
-                            >
-                                <div className="admintx__card-top">
-                                    <div className="admintx__card-avatar">
-                                        {initials(user.fullName)}
-                                    </div>
-                                    <div className="admintx__card-info">
-                                        <span className="admintx__card-name">{user.fullName}</span>
-                                        <span className="admintx__card-email">{user.email}</span>
-                                    </div>
-                                    <span
-                                        className={`admintx__card-dot ${user.emailVerified ? "dot--verified" : "dot--unverified"}`}
-                                        aria-hidden="true"
-                                    />
-                                </div>
-                                <div className="admintx__card-stats">
-                                    <div className="admintx__card-stat">
-                                        <Activity size={11} aria-hidden="true" />
-                                        <span>{user.txCount} transactions</span>
-                                    </div>
-                                    <div className="admintx__card-stat">
-                                        <DollarSign size={11} aria-hidden="true" />
-                                        <span>{fmt(user.totalBalance)}</span>
-                                    </div>
-                                </div>
-                                <div className="admintx__card-accounts">
-                                    {user.accounts.map(a => (
-                                        <span key={a.id} className={`admintx__card-acct-tag acct--${a.type.toLowerCase()}`}>
-                                            {a.type.charAt(0) + a.type.slice(1).toLowerCase()}
-                                        </span>
-                                    ))}
-                                </div>
-                                <span className="admintx__card-cta">View Transactions →</span>
-                            </button>
-                        ))}
-                    </div>
-                </>
+                <div className="adminusers__table-wrap">
+                    <table className="adminusers__table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <button onClick={() => toggleSort("fullName")} className="adminusers__th-btn">
+                                        Client <SortIcon field="fullName" />
+                                    </button>
+                                </th>
+                                <th>Accounts</th>
+                                <th>Activity</th>
+                                <th>
+                                    <button onClick={() => toggleSort("createdAt")} className="adminusers__th-btn">
+                                        Joined <SortIcon field="createdAt" />
+                                    </button>
+                                </th>
+                                <th>Manage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.map((user) => {
+                                const isOpen = openDropdown === user.id
+                                const feedback = feedbacks[user.id]
+                                const error = errors[user.id]
+                                const active = getActiveAccount(user)
+                                const totalUser = user.accounts.reduce((s, a) => s + a.balance, 0)
+
+                                return (
+                                    <tr key={user.id} className={isOpen ? "adminusers__row--active" : ""}>
+
+                                        {/* Client */}
+                                        <td>
+                                            <div className="adminusers__client">
+                                                <div className="adminusers__avatar" style={user.status === 'SUSPENDED' ? { opacity: 0.5 } : {}}>
+                                                    {user.avatarUrl
+                                                        ? <img src={user.avatarUrl} alt={user.fullName} />
+                                                        : <span>{initials(user.fullName)}</span>}
+                                                </div>
+                                                <div className="adminusers__client-info">
+                                                    <span className="adminusers__client-name" style={user.status === 'SUSPENDED' ? { color: '#ef4444' } : {}}>
+                                                        {user.fullName} {user.status === 'SUSPENDED' && '(Suspended)'}
+                                                    </span>
+                                                    <span className="adminusers__client-email">{user.email}</span>
+                                                </div>
+                                                <span
+                                                    className={`adminusers__verified-dot${user.emailVerified ? " adminusers__verified-dot--yes" : ""}`}
+                                                    title={user.emailVerified ? "Email verified" : "Unverified"}
+                                                />
+                                            </div>
+                                        </td>
+
+                                        {/* Accounts */}
+                                        <td>
+                                            {user.accounts.length === 0 ? (
+                                                <span className="adminusers__no-accounts">No accounts</span>
+                                            ) : (
+                                                <div className="adminusers__accounts">
+                                                    {user.accounts.map((acc) => (
+                                                        <div key={acc.id} className="adminusers__account-row">
+                                                            <span className={`adminusers__account-type ${ACCOUNT_TYPE_COLORS[acc.type]}`}>
+                                                                {ACCOUNT_TYPE_LABELS[acc.type]}
+                                                            </span>
+                                                            <span className="adminusers__account-balance">
+                                                                {fmt(acc.balance, acc.currency)}
+                                                                {feedback?.accountId === acc.id && feedback.text && (
+                                                                    <span className="adminusers__balance-feedback">
+                                                                        <TrendingUp size={9} aria-hidden /> {feedback.text}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                    <div className="adminusers__account-total">
+                                                        Total: {fmt(totalUser)}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </td>
+
+                                        {/* Activity */}
+                                        <td>
+                                            <div className="adminusers__activity">
+                                                <span>{user._count.transfers} transfers</span>
+                                                <span>{user._count.loans} loans</span>
+                                            </div>
+                                        </td>
+
+                                        {/* Joined */}
+                                        <td>
+                                            <span className="adminusers__mono adminusers__mono--sm">
+                                                {fmtDate(user.createdAt)}
+                                            </span>
+                                        </td>
+
+                                        {/* Manage */}
+                                        <td className="adminusers__action-cell">
+                                            <div className="adminusers__dropdown-wrap" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                {user.accounts.length > 0 && (
+                                                    <button
+                                                        className={`adminusers__dropdown-trigger${isOpen ? " open" : ""}`}
+                                                        onClick={() => setOpenDropdown(isOpen ? null : user.id)}
+                                                        disabled={isPending}
+                                                        aria-expanded={isOpen}
+                                                    >
+                                                        Adjust
+                                                        <ChevronDown size={12} aria-hidden />
+                                                    </button>
+                                                )}
+
+                                                <button
+                                                    className="adminusers__icon-btn edit-btn"
+                                                    onClick={() => {
+                                                        setEditUser(user)
+                                                        setEditForm({ fullName: user.fullName, email: user.email, ssn: user.ssn || "", avatarUrl: user.avatarUrl || "" })
+                                                    }}
+                                                    title="Edit User"
+                                                >
+                                                    <Edit size={14} />
+                                                </button>
+                                                <button
+                                                    className="adminusers__icon-btn suspend-btn"
+                                                    onClick={() => setSuspendUser(user)}
+                                                    title="Suspend User"
+                                                >
+                                                    <ShieldAlert size={14} color={user.status === 'SUSPENDED' ? '#f59e0b' : 'currentColor'} />
+                                                </button>
+                                                <button
+                                                    className="adminusers__icon-btn delete-btn"
+                                                    onClick={() => setDeleteUser(user)}
+                                                    title="Delete User"
+                                                >
+                                                    <Trash2 size={14} color="#ef4444" />
+                                                </button>
+
+                                                {isOpen && (
+                                                    <div className="adminusers__dropdown" role="dialog" aria-label={`Adjust balance for ${user.fullName}`}>
+                                                        <div className="adminusers__dropdown-header">
+                                                            <div className="adminusers__dropdown-header-left">
+                                                                <Wallet size={13} aria-hidden />
+                                                                <span>{user.fullName}</span>
+                                                            </div>
+                                                            <button className="adminusers__dropdown-close" onClick={() => setOpenDropdown(null)} aria-label="Close">
+                                                                <X size={12} />
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Account selector */}
+                                                        <div className="adminusers__account-selector">
+                                                            <p className="adminusers__selector-label">Select Account</p>
+                                                            <div className="adminusers__selector-tabs">
+                                                                {user.accounts.map((acc) => (
+                                                                    <button
+                                                                        key={acc.id}
+                                                                        className={`adminusers__selector-tab${(selectedAccount[user.id] ?? user.accounts[0].id) === acc.id ? " active" : ""
+                                                                            }`}
+                                                                        onClick={() => setSelectedAccount((p) => ({ ...p, [user.id]: acc.id }))}
+                                                                    >
+                                                                        <span className={`adminusers__tab-type ${ACCOUNT_TYPE_COLORS[acc.type]}`}>
+                                                                            {ACCOUNT_TYPE_LABELS[acc.type]}
+                                                                        </span>
+                                                                        <span className="adminusers__tab-balance">
+                                                                            {fmt(acc.balance, acc.currency)}
+                                                                        </span>
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                            {active && (
+                                                                <p className="adminusers__active-balance">
+                                                                    Current balance: <strong>{fmt(active.balance, active.currency)}</strong>
+                                                                </p>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Presets */}
+                                                        <div className="adminusers__presets">
+                                                            {BALANCE_PRESETS.map((preset) => (
+                                                                <button
+                                                                    key={preset.label}
+                                                                    className={`adminusers__preset${preset.delta !== undefined && preset.delta < 0 ? " adminusers__preset--neg" : ""}`}
+                                                                    onClick={() => handlePreset(user, preset)}
+                                                                    disabled={isPending}
+                                                                >
+                                                                    {preset.label}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* Custom input */}
+                                                        <div className="adminusers__custom">
+                                                            <p className="adminusers__custom-label">Custom amount</p>
+                                                            <div className="adminusers__custom-row">
+                                                                <select
+                                                                    className="adminusers__custom-mode"
+                                                                    value={customMode[user.id] ?? "add"}
+                                                                    onChange={(e) => setCustomMode((p) => ({ ...p, [user.id]: e.target.value as any }))}
+                                                                >
+                                                                    <option value="add">Add</option>
+                                                                    <option value="subtract">Subtract</option>
+                                                                    <option value="set">Set to</option>
+                                                                </select>
+                                                                <div className="adminusers__custom-input-wrap">
+                                                                    <span className="adminusers__custom-symbol">$</span>
+                                                                    <input
+                                                                        type="number"
+                                                                        className="adminusers__custom-input"
+                                                                        placeholder="0.00"
+                                                                        min="0"
+                                                                        step="0.01"
+                                                                        value={customAmount[user.id] ?? ""}
+                                                                        onChange={(e) => setCustomAmount((p) => ({ ...p, [user.id]: e.target.value }))}
+                                                                        onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit(user)}
+                                                                    />
+                                                                </div>
+                                                                <button
+                                                                    className="adminusers__custom-apply"
+                                                                    onClick={() => handleCustomSubmit(user)}
+                                                                    disabled={isPending}
+                                                                >
+                                                                    Apply
+                                                                </button>
+                                                            </div>
+                                                            {error && <p className="adminusers__error" role="alert">{error}</p>}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
+                        </tbody>
+                    </table>
+                </div>
             )}
 
-            {/* ── Modal ── */}
-            {selectedUser && (
-                <TxModal
-                    user={selectedUser}
-                    onClose={() => setSelectedUser(null)}
-                />
+            <p className="adminusers__count">
+                Showing {filtered.length} of {users.length} clients
+            </p>
+
+            {/* Modals */}
+            {editUser && (
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal">
+                        <div className="admin-modal-header">
+                            <h2>Edit User</h2>
+                            <button onClick={() => setEditUser(null)} className="admin-modal-close" aria-label="Close modal"><X size={16} /></button>
+                        </div>
+                        <div className="admin-modal-body">
+                            {editError && <div className="adminusers__error">{editError}</div>}
+                            <div className="admin-modal-field">
+                                <label>Full Name</label>
+                                <input value={editForm.fullName} onChange={e => setEditForm({ ...editForm, fullName: e.target.value })} />
+                            </div>
+                            <div className="admin-modal-field">
+                                <label>Email</label>
+                                <input value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} />
+                            </div>
+                            <div className="admin-modal-field">
+                                <label>Tax ID / SSN</label>
+                                <input value={editForm.ssn} onChange={e => setEditForm({ ...editForm, ssn: e.target.value })} />
+                            </div>
+                            <div className="admin-modal-field">
+                                <label>Avatar URL</label>
+                                <input value={editForm.avatarUrl} onChange={e => setEditForm({ ...editForm, avatarUrl: e.target.value })} />
+                            </div>
+                        </div>
+                        <div className="admin-modal-footer">
+                            <button onClick={() => setEditUser(null)} className="admin-modal-btn">Cancel</button>
+                            <button onClick={handleEditSubmit} className="admin-modal-btn admin-modal-btn--primary" disabled={isPending}>Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {suspendUser && (
+                <div className="admin-modal-overlay">
+                    <div className={`admin-modal ${suspendUser.status === 'SUSPENDED' ? 'admin-modal--warning' : 'admin-modal--danger'}`}>
+                        <div className="admin-modal-header">
+                            <h2>{suspendUser.status === 'SUSPENDED' ? 'Manage Suspension' : 'Suspend User'}</h2>
+                            <button onClick={() => setSuspendUser(null)} className="admin-modal-close" aria-label="Close modal"><X size={16} /></button>
+                        </div>
+                        <div className="admin-modal-body">
+                            {suspendError && <div className="adminusers__error">{suspendError}</div>}
+                            <p style={{ margin: 0, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', textAlign: 'left' }}>
+                                User: <strong>{suspendUser.fullName}</strong>
+                            </p>
+
+                            {suspendUser.status === 'SUSPENDED' ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', textAlign: 'left' }}>
+                                    <p style={{ margin: 0, color: '#f59e0b', fontSize: 'var(--font-size-sm)', lineHeight: 1.5 }}>
+                                        This account is currently suspended until {suspendUser.suspendedUntil ? new Date(suspendUser.suspendedUntil).toLocaleDateString() : 'indefinitely'}.
+                                    </p>
+                                    <button onClick={handleUnsuspend} className="admin-modal-btn admin-modal-btn--warning" disabled={isPending} style={{ width: 'auto', alignSelf: 'flex-start' }}>Lift Suspension</button>
+                                </div>
+                            ) : (
+                                <div className="admin-modal-field">
+                                    <label>Suspend for (days)</label>
+                                    <input type="number" min="1" value={suspendDays} onChange={e => setSuspendDays(e.target.value)} />
+                                </div>
+                            )}
+                        </div>
+                        {suspendUser.status !== 'SUSPENDED' && (
+                            <div className="admin-modal-footer">
+                                <button onClick={() => setSuspendUser(null)} className="admin-modal-btn">Cancel</button>
+                                <button onClick={handleSuspendSubmit} className="admin-modal-btn admin-modal-btn--danger" disabled={isPending}>Suspend Account</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {deleteUser && (
+                <div className="admin-modal-overlay">
+                    <div className="admin-modal admin-modal--danger">
+                        <div className="admin-modal-header">
+                            <h2>Delete User</h2>
+                            <button onClick={() => setDeleteUser(null)} className="admin-modal-close" aria-label="Close modal"><X size={16} /></button>
+                        </div>
+                        <div className="admin-modal-body" style={{ gap: 'var(--space-3)' }}>
+                            {deleteError && <div className="adminusers__error">{deleteError}</div>}
+                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', color: '#ef4444' }}>
+                                <AlertCircle size={24} />
+                                <strong style={{ fontSize: 'var(--font-size-md)' }}>Warning: Irreversible Action</strong>
+                            </div>
+                            <p style={{ lineHeight: 1.6, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', margin: 0, textAlign: 'left' }}>
+                                Are you sure you want to permanently delete <strong>{deleteUser.fullName}</strong>? This will instantly remove their account, balances, loans, and all transaction history. This action cannot be undone.
+                            </p>
+                        </div>
+                        <div className="admin-modal-footer">
+                            <button onClick={() => setDeleteUser(null)} className="admin-modal-btn">Cancel</button>
+                            <button onClick={handleDeleteSubmit} className="admin-modal-btn admin-modal-btn--danger" disabled={isPending}>Delete User</button>
+                        </div>
+                    </div>
+                </div>
             )}
 
         </div>
-    );
+    )
 }

@@ -12,9 +12,9 @@ import { AssetSummaryAmounts } from "@/components/user/AssetSummaryAmounts";
 import { AssetLoansList } from "@/components/user/AssetLoansList";
 import "@/styles/user/assets.scss";
 
-function fmt(val: { toFixed: (n: number) => string } | number, currency = "USD") {
+function fmt(val: { toFixed: (n: number) => string } | number, currency = "GBP") {
     const n = typeof val === "number" ? val : Number(val);
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-GB", {
         style: "currency",
         currency,
         minimumFractionDigits: 2,
@@ -23,7 +23,7 @@ function fmt(val: { toFixed: (n: number) => string } | number, currency = "USD")
 
 function fmtDate(date: Date | string) {
     const d = typeof date === "string" ? new Date(date) : date;
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-GB", {
         month: "short",
         day: "numeric",
         year: "numeric",

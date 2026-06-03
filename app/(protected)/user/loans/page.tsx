@@ -18,8 +18,8 @@ import "@/styles/user/loans.scss"
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret")
 
-function fmt(val: number | { toFixed: (n: number) => string }, currency = "USD") {
-    return new Intl.NumberFormat("en-US", {
+function fmt(val: number | { toFixed: (n: number) => string }, currency = "GDP") {
+    return new Intl.NumberFormat("en-UK", {
         style: "currency",
         currency,
         minimumFractionDigits: 2,
@@ -27,7 +27,7 @@ function fmt(val: number | { toFixed: (n: number) => string }, currency = "USD")
 }
 
 function fmtDate(date: Date) {
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-UK", {
         month: "short",
         day: "numeric",
         year: "numeric",

@@ -32,9 +32,9 @@ const CONTACT_INFO = [
     {
         id: "address",
         label: "Headquarters",
-        value: "11 Wall Street, Suite 2400\nNew York, NY 10005",
-        display: "11 Wall Street, Suite 2400\nNew York, NY 10005",
-        href: "https://maps.google.com/?q=11+Wall+Street+New+York+NY+10005",
+        value: "City center, South Hampton, UK",
+        display: "City center, South Hampton, UK",
+        href: "https://maps.app.goo.gl/gwHNtuxDehUg2NS27",
         icon: (
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />

@@ -5,11 +5,6 @@ import { jwtVerify } from "jose"
 import { prisma } from "@/lib/db"
 import { z } from "zod"
 
-/** Lightweight action — verifies an internal GPW account number exists.
- *  Accepts both:
- *    - Exact account numbers:  GPW9039327915-CHK
- *    - Root user account nums: GPW9039327915  (resolves to their CHECKING account)
- */
 export async function verifyInternalAccountAction(accountNumber: string) {
     if (!accountNumber || accountNumber.length < 4) {
         return { valid: false, message: "" }
@@ -69,8 +64,8 @@ const TransferSchema = z.object({
     recipientAccountNumber: z.string().min(4, "Account number is required."),
     recipientBank: z.string().min(1, "Please select a destination bank."),
     amount: z.coerce.number({ message: "Enter a valid amount." })
-        .min(1, "Minimum transfer is $1.00.")
-        .max(10_000_000, "Maximum single transfer is $10,000,000."),
+        .min(1, "Minimum transfer is £1.00.")
+        .max(10_000_000, "Maximum single transfer is £10,000,000."),
     currency: z.string().min(3).max(3),
     note: z.string().optional(),
 })

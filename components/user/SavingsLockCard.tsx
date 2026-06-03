@@ -17,8 +17,8 @@ import {
 } from "lucide-react";
 import { requestSavingsWithdrawalAction } from "@/actions/savings";
 
-function fmt(val: number, currency = "USD") {
-    return new Intl.NumberFormat("en-US", {
+function fmt(val: number, currency = "GDP") {
+    return new Intl.NumberFormat("en-UK", {
         style: "currency",
         currency,
         minimumFractionDigits: 2,
@@ -26,7 +26,7 @@ function fmt(val: number, currency = "USD") {
 }
 
 function fmtDate(iso: string) {
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-UK", {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -110,19 +110,17 @@ export function SavingsLockCard({ lock }: SavingsLockCardProps) {
 
     return (
         <div
-            className={`savingspage__lock-card ${
-                isUnlocked && lock.status === "LOCKED" ? "savingspage__lock-card--unlocked" :
-                lock.status === "PENDING_WITHDRAWAL" ? "savingspage__lock-card--pending" :
-                lock.status === "COMPLETED" ? "savingspage__lock-card--completed" : ""
-            }`}
+            className={`savingspage__lock-card ${isUnlocked && lock.status === "LOCKED" ? "savingspage__lock-card--unlocked" :
+                    lock.status === "PENDING_WITHDRAWAL" ? "savingspage__lock-card--pending" :
+                        lock.status === "COMPLETED" ? "savingspage__lock-card--completed" : ""
+                }`}
         >
             {/* ── Collapsed Header ── */}
             <div className="savingspage__lock-card-header" onClick={() => setOpen(o => !o)}>
                 <div className="savingspage__lock-card-left">
-                    <div className={`savingspage__lock-icon ${
-                        lock.status === "PENDING_WITHDRAWAL" ? "savingspage__lock-icon--pending" :
-                        lock.status === "COMPLETED" ? "savingspage__lock-icon--completed" : ""
-                    }`}>
+                    <div className={`savingspage__lock-icon ${lock.status === "PENDING_WITHDRAWAL" ? "savingspage__lock-icon--pending" :
+                            lock.status === "COMPLETED" ? "savingspage__lock-icon--completed" : ""
+                        }`}>
                         <StatusIcon size={18} />
                     </div>
                     <div>

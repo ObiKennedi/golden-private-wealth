@@ -11,9 +11,9 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function fmt(val: { toFixed: (n: number) => string } | number, currency = "USD") {
+function fmt(val: { toFixed: (n: number) => string } | number, currency = "GDP") {
     const n = typeof val === "number" ? val : Number(val);
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-UK", {
         style: "currency",
         currency,
         minimumFractionDigits: 2,
@@ -63,9 +63,9 @@ export default async function TransactionsPage() {
     });
 
     // Account balance snapshots for the summary card
-    const checking  = user.accounts.find(a => a.type === "CHECKING");
-    const savings   = user.accounts.find(a => a.type === "SAVINGS");
-    const invest    = user.accounts.find(a => a.type === "INVESTMENT");
+    const checking = user.accounts.find(a => a.type === "CHECKING");
+    const savings = user.accounts.find(a => a.type === "SAVINGS");
+    const invest = user.accounts.find(a => a.type === "INVESTMENT");
     const totalLoan = user.loans.reduce((s, l) => s + Number(l.principalAmount), 0);
 
     const serializedTransactions = transactions.map(tx => ({

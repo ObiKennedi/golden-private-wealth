@@ -17,9 +17,9 @@ import {
 } from "lucide-react";
 import "@/styles/user/assets.scss";
 
-function fmt(val: number | string, currency = "USD") {
+function fmt(val: number | string, currency = "GBP") {
     const n = typeof val === "number" ? val : Number(val);
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-GB", {
         style: "currency",
         currency,
         minimumFractionDigits: 2,
@@ -28,7 +28,7 @@ function fmt(val: number | string, currency = "USD") {
 
 function fmtDate(date: Date | string) {
     const d = typeof date === "string" ? new Date(date) : date;
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-GB", {
         month: "short",
         day: "numeric",
         year: "numeric",

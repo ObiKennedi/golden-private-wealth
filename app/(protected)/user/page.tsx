@@ -192,8 +192,8 @@ export default async function UserHomePage() {
                             // Pick direction-aware icon for transfers
                             const Icon = tx.type === "TRANSFER"
                                 ? isReceivedTransfer ? ArrowDownLeft
-                                : isSentTransfer    ? ArrowUpRight
-                                : ArrowLeftRight
+                                    : isSentTransfer ? ArrowUpRight
+                                        : ArrowLeftRight
                                 : (TX_ICON[tx.type] ?? ArrowLeftRight);
 
                             const iconColor = isCredit ? "tx--credit" : isDebit ? "tx--debit" : "tx--neutral";

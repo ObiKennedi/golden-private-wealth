@@ -8,82 +8,70 @@ import { submitTransferAction, verifyInternalAccountAction } from "@/actions/tra
 // ── Bank list ─────────────────────────────────────────────────
 const BANKS = [
     { group: "Internal", value: "GOLDEN_PRIVATE_WEALTH", label: "Golden Private Wealth Bank" },
-    // ── Major US Banks ──
-    { group: "US Commercial Banks", value: "JPMORGAN_CHASE", label: "JPMorgan Chase" },
-    { group: "US Commercial Banks", value: "BANK_OF_AMERICA", label: "Bank of America" },
-    { group: "US Commercial Banks", value: "WELLS_FARGO", label: "Wells Fargo" },
-    { group: "US Commercial Banks", value: "CITIBANK", label: "Citibank" },
-    { group: "US Commercial Banks", value: "US_BANK", label: "U.S. Bank" },
-    { group: "US Commercial Banks", value: "PNC_BANK", label: "PNC Bank" },
-    { group: "US Commercial Banks", value: "TRUIST", label: "Truist Bank" },
-    { group: "US Commercial Banks", value: "GOLDMAN_SACHS", label: "Goldman Sachs" },
-    { group: "US Commercial Banks", value: "MORGAN_STANLEY", label: "Morgan Stanley" },
-    { group: "US Commercial Banks", value: "TD_BANK", label: "TD Bank" },
-    { group: "US Commercial Banks", value: "CAPITAL_ONE", label: "Capital One" },
-    { group: "US Commercial Banks", value: "CITIZENS_BANK", label: "Citizens Bank" },
-    { group: "US Commercial Banks", value: "FIFTH_THIRD", label: "Fifth Third Bank" },
-    { group: "US Commercial Banks", value: "REGIONS_BANK", label: "Regions Bank" },
-    { group: "US Commercial Banks", value: "HUNTINGTON", label: "Huntington Bank" },
-    { group: "US Commercial Banks", value: "ALLY_BANK", label: "Ally Bank" },
-    { group: "US Commercial Banks", value: "FIRST_REPUBLIC", label: "First Republic Bank" },
-    { group: "US Commercial Banks", value: "SILICON_VALLEY_BANK", label: "Silicon Valley Bank" },
-    { group: "US Commercial Banks", value: "COMERICA", label: "Comerica Bank" },
-    { group: "US Commercial Banks", value: "FLAGSTAR", label: "Flagstar Bank" },
-    // ── US Credit Unions ──
-    { group: "US Credit Unions", value: "NAVY_FEDERAL", label: "Navy Federal Credit Union" },
-    { group: "US Credit Unions", value: "PENFED", label: "PenFed Credit Union" },
-    { group: "US Credit Unions", value: "BECU", label: "BECU" },
-    { group: "US Credit Unions", value: "SCHOOLS_FIRST", label: "SchoolsFirst FCU" },
-    {group: "US Credit Unions", value: "ADDITION_FINANCIAL", label: "Addition Financial Credit Union" },
-    // ── US Fintech / Neo-banks ──
-    { group: "US Fintech & Neo-banks", value: "CHIME", label: "Chime" },
-    { group: "US Fintech & Neo-banks", value: "SOFI", label: "SoFi" },
-    { group: "US Fintech & Neo-banks", value: "CURRENT", label: "Current" },
-    { group: "US Fintech & Neo-banks", value: "VARO", label: "Varo Bank" },
-    { group: "US Fintech & Neo-banks", value: "DAVE", label: "Dave" },
-    { group: "US Fintech & Neo-banks", value: "CASH_APP", label: "Cash App (Sutton Bank)" },
-    { group: "US Fintech & Neo-banks", value: "MERCURY", label: "Mercury" },
-    { group: "US Fintech & Neo-banks", value: "BREX", label: "Brex" },
-    { group: "US Fintech & Neo-banks", value: "RELAY", label: "Relay" },
-    // ── International Banks ──
-    { group: "International Banks", value: "HSBC", label: "HSBC" },
-    { group: "International Banks", value: "BARCLAYS", label: "Barclays" },
+    // ── UK High Street Banks ──
+    { group: "UK High Street Banks", value: "BARCLAYS", label: "Barclays" },
+    { group: "UK High Street Banks", value: "HSBC_UK", label: "HSBC UK" },
+    { group: "UK High Street Banks", value: "LLOYDS", label: "Lloyds Bank" },
+    { group: "UK High Street Banks", value: "NATWEST", label: "NatWest" },
+    { group: "UK High Street Banks", value: "SANTANDER_UK", label: "Santander UK" },
+    { group: "UK High Street Banks", value: "STANDARD_CHARTERED", label: "Standard Chartered" },
+    { group: "UK High Street Banks", value: "TSB", label: "TSB Bank" },
+    { group: "UK High Street Banks", value: "METRO_BANK", label: "Metro Bank" },
+    { group: "UK High Street Banks", value: "VIRGIN_MONEY", label: "Virgin Money" },
+    { group: "UK High Street Banks", value: "CO_OP_BANK", label: "The Co-operative Bank" },
+    // ── UK Building Societies ──
+    { group: "UK Building Societies", value: "NATIONWIDE", label: "Nationwide Building Society" },
+    { group: "UK Building Societies", value: "YORKSHIRE_BS", label: "Yorkshire Building Society" },
+    { group: "UK Building Societies", value: "COVENTRY_BS", label: "Coventry Building Society" },
+    { group: "UK Building Societies", value: "SKIPTON_BS", label: "Skipton Building Society" },
+    { group: "UK Building Societies", value: "WEST_BROMWICH_BS", label: "West Bromwich Building Society" },
+    { group: "UK Building Societies", value: "LEEDS_BS", label: "Leeds Building Society" },
+    // ── UK Private & Investment Banks ──
+    { group: "UK Private & Investment Banks", value: "COUTTS", label: "Coutts & Co" },
+    { group: "UK Private & Investment Banks", value: "HANDELSBANKEN", label: "Handelsbanken UK" },
+    { group: "UK Private & Investment Banks", value: "INVESTEC", label: "Investec Bank" },
+    { group: "UK Private & Investment Banks", value: "CLOSE_BROTHERS", label: "Close Brothers" },
+    { group: "UK Private & Investment Banks", value: "ARBUTHNOT_LATHAM", label: "Arbuthnot Latham" },
+    { group: "UK Private & Investment Banks", value: "C_HOARE", label: "C. Hoare & Co" },
+    { group: "UK Private & Investment Banks", value: "WEATHERBYS", label: "Weatherbys Private Bank" },
+    // ── UK Challenger & Digital Banks ──
+    { group: "UK Challenger & Digital Banks", value: "MONZO", label: "Monzo" },
+    { group: "UK Challenger & Digital Banks", value: "STARLING", label: "Starling Bank" },
+    { group: "UK Challenger & Digital Banks", value: "REVOLUT", label: "Revolut" },
+    { group: "UK Challenger & Digital Banks", value: "MONESE", label: "Monese" },
+    { group: "UK Challenger & Digital Banks", value: "ATOM_BANK", label: "Atom Bank" },
+    { group: "UK Challenger & Digital Banks", value: "TANDEM", label: "Tandem Bank" },
+    { group: "UK Challenger & Digital Banks", value: "ZOPA", label: "Zopa Bank" },
+    { group: "UK Challenger & Digital Banks", value: "CHASE_UK", label: "Chase UK" },
+    { group: "UK Challenger & Digital Banks", value: "KROO", label: "Kroo Bank" },
+    // ── International Banks (UK-accessible) ──
     { group: "International Banks", value: "DEUTSCHE_BANK", label: "Deutsche Bank" },
     { group: "International Banks", value: "BNP_PARIBAS", label: "BNP Paribas" },
-    { group: "International Banks", value: "CREDIT_SUISSE", label: "Credit Suisse" },
-    { group: "International Banks", value: "UBS", label: "UBS" },
-    { group: "International Banks", value: "STANDARD_CHARTERED", label: "Standard Chartered" },
     { group: "International Banks", value: "SOCIETE_GENERALE", label: "Société Générale" },
     { group: "International Banks", value: "ING", label: "ING Bank" },
-    { group: "International Banks", value: "SANTANDER", label: "Santander" },
-    { group: "International Banks", value: "LLOYDS", label: "Lloyds Bank" },
+    { group: "International Banks", value: "UBS", label: "UBS" },
+    { group: "International Banks", value: "CREDIT_SUISSE", label: "Credit Suisse" },
+    { group: "International Banks", value: "ABN_AMRO", label: "ABN AMRO" },
+    { group: "International Banks", value: "RABOBANK", label: "Rabobank" },
     { group: "International Banks", value: "RBC", label: "Royal Bank of Canada" },
-    { group: "International Banks", value: "SCOTIABANK", label: "Scotiabank" },
     { group: "International Banks", value: "ANZ", label: "ANZ Bank" },
-    { group: "International Banks", value: "NAB", label: "National Australia Bank" },
-    { group: "International Banks", value: "WESTPAC", label: "Westpac" },
     { group: "International Banks", value: "DBS", label: "DBS Bank" },
     { group: "International Banks", value: "MIZUHO", label: "Mizuho Bank" },
-    { group: "International Banks", value: "MUFG", label: "MUFG Bank" },
     { group: "International Banks", value: "ICBC", label: "ICBC" },
     // ── Global Fintech ──
-    { group: "Global Fintech", value: "REVOLUT", label: "Revolut" },
     { group: "Global Fintech", value: "WISE", label: "Wise (TransferWise)" },
     { group: "Global Fintech", value: "N26", label: "N26" },
-    { group: "Global Fintech", value: "MONZO", label: "Monzo" },
-    { group: "Global Fintech", value: "STARLING", label: "Starling Bank" },
     { group: "Global Fintech", value: "NUBANK", label: "Nubank" },
     { group: "Global Fintech", value: "BUNQ", label: "bunq" },
-    { group: "Global Fintech", value: "KLARNA", label: "Klarna" },
     { group: "Global Fintech", value: "PAYONEER", label: "Payoneer" },
     { group: "Global Fintech", value: "AIRWALLEX", label: "Airwallex" },
     { group: "Global Fintech", value: "STRIPE", label: "Stripe Treasury" },
 ]
 
 const CURRENCIES = [
-    { value: "USD", label: "USD — US Dollar" },
-    { value: "EUR", label: "EUR — Euro" },
     { value: "GBP", label: "GBP — British Pound" },
+    { value: "EUR", label: "EUR — Euro" },
+    { value: "USD", label: "USD — US Dollar" },
     { value: "CAD", label: "CAD — Canadian Dollar" },
     { value: "AUD", label: "AUD — Australian Dollar" },
     { value: "CHF", label: "CHF — Swiss Franc" },
@@ -99,14 +87,14 @@ const STATUS_META: Record<string, { cls: string; Icon: typeof Clock; label: stri
     FAILED: { cls: "status--rejected", Icon: XCircle, label: "Failed" },
 }
 
-function fmt(amount: number, currency = "USD") {
-    return new Intl.NumberFormat("en-US", {
+function fmt(amount: number, currency = "GBP") {
+    return new Intl.NumberFormat("en-GB", {
         style: "currency", currency, minimumFractionDigits: 2,
     }).format(amount)
 }
 
 function fmtDate(iso: string) {
-    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso))
+    return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(new Date(iso))
 }
 
 interface Transfer {
@@ -136,13 +124,12 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
         recipientAccountNumber: "",
         recipientBank: "",
         amount: "",
-        currency: "USD",
+        currency: "GBP",
         note: "",
     })
     const [errors, setErrors] = useState<Partial<Record<keyof typeof fields, string>>>({})
     const [globalError, setGlobalError] = useState<string | null>(null)
 
-    // Internal account verification state
     const [acctVerify, setAcctVerify] = useState<{
         status: "idle" | "checking" | "valid" | "invalid"
         message: string
@@ -153,32 +140,17 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
 
     const isInternal = fields.recipientBank === "GOLDEN_PRIVATE_WEALTH"
 
-    // Debounced live verification when internal bank + account number changes
     useEffect(() => {
-        if (!isInternal) {
-            setAcctVerify({ status: "idle", message: "" })
-            return
-        }
+        if (!isInternal) { setAcctVerify({ status: "idle", message: "" }); return }
         const num = fields.recipientAccountNumber.trim()
-        if (!num) {
-            setAcctVerify({ status: "idle", message: "" })
-            return
-        }
+        if (!num) { setAcctVerify({ status: "idle", message: "" }); return }
         if (debounceRef.current) clearTimeout(debounceRef.current)
         setAcctVerify({ status: "checking", message: "Verifying account…" })
         debounceRef.current = setTimeout(async () => {
             const result = await verifyInternalAccountAction(num)
             if (result.valid) {
-                setAcctVerify({
-                    status: "valid",
-                    message: result.message ?? "",
-                    holderName: result.holderName,
-                    resolvedAccountNumber: result.resolvedAccountNumber,
-                })
-                // Auto-fill recipient name from verified account
-                if (result.holderName) {
-                    setFields(p => ({ ...p, recipientName: result.holderName! }))
-                }
+                setAcctVerify({ status: "valid", message: result.message ?? "", holderName: result.holderName, resolvedAccountNumber: result.resolvedAccountNumber })
+                if (result.holderName) setFields(p => ({ ...p, recipientName: result.holderName! }))
             } else {
                 setAcctVerify({ status: "invalid", message: result.message ?? "Account not found." })
             }
@@ -186,30 +158,28 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
     }, [fields.recipientAccountNumber, isInternal])
 
-    // Modal state
-    const [modalData, setModalData] = useState<{ isVisible: boolean; isInternal: boolean; reference: string | null; amount: string; recipientName: string; bank: string } | null>(null)
+    const [modalData, setModalData] = useState<{
+        isVisible: boolean; isInternal: boolean; reference: string | null
+        amount: string; recipientName: string; bank: string
+    } | null>(null)
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
-        setFields((p) => ({ ...p, [name]: value }))
-        if (errors[name as keyof typeof fields]) {
-            setErrors((p) => ({ ...p, [name]: undefined }))
-        }
+        setFields(p => ({ ...p, [name]: value }))
+        if (errors[name as keyof typeof fields]) setErrors(p => ({ ...p, [name]: undefined }))
     }
 
     const validate = () => {
         const e: Partial<Record<keyof typeof fields, string>> = {}
-        // For internal transfers, block if account not verified
-        if (isInternal && acctVerify.status !== "valid") {
+        if (isInternal && acctVerify.status !== "valid")
             e.recipientAccountNumber = "Please enter a valid GPW account number and wait for verification."
-        }
         if (!fields.recipientName.trim()) e.recipientName = "Recipient name is required."
         if (!fields.recipientAccountNumber.trim()) e.recipientAccountNumber = e.recipientAccountNumber || "Account number is required."
         if (!fields.recipientBank) e.recipientBank = "Please select a destination bank."
         const amt = parseFloat(fields.amount)
         if (!fields.amount || isNaN(amt)) e.amount = "Enter a valid amount."
-        else if (amt < 1) e.amount = "Minimum transfer is $1.00."
-        else if (amt > 10_000_000) e.amount = "Maximum single transfer is $10,000,000."
+        else if (amt < 1) e.amount = "Minimum transfer is £1.00."
+        else if (amt > 10_000_000) e.amount = "Maximum single transfer is £10,000,000."
         setErrors(e)
         return Object.keys(e).length === 0
     }
@@ -218,29 +188,21 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
         e.preventDefault()
         if (!validate()) return
         setGlobalError(null)
-
         startTransition(async () => {
             const fd = new FormData()
             Object.entries(fields).forEach(([k, v]) => fd.append(k, v))
-            // For internal transfers, override with the resolved (suffixed) account number
-            if (isInternal && acctVerify.resolvedAccountNumber) {
+            if (isInternal && acctVerify.resolvedAccountNumber)
                 fd.set("recipientAccountNumber", acctVerify.resolvedAccountNumber)
-            }
             fd.append("userId", userId)
-
             const result = await submitTransferAction(null, fd)
-            if (result?.globalError) {
-                setGlobalError(result.globalError)
-                return
-            }
-            // Show modal instead of routing
+            if (result?.globalError) { setGlobalError(result.globalError); return }
             setModalData({
                 isVisible: true,
                 isInternal: result?.isInternal || false,
                 reference: result?.reference || "N/A",
                 amount: fields.amount,
                 recipientName: fields.recipientName,
-                bank: BANKS.find(b => b.value === fields.recipientBank)?.label || fields.recipientBank
+                bank: BANKS.find(b => b.value === fields.recipientBank)?.label || fields.recipientBank,
             })
         })
     }
@@ -248,19 +210,10 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
     const closeModal = () => {
         setModalData(null)
         setAcctVerify({ status: "idle", message: "" })
-        // Reset form
-        setFields({
-            recipientName: "",
-            recipientAccountNumber: "",
-            recipientBank: "",
-            amount: "",
-            currency: "USD",
-            note: "",
-        })
+        setFields({ recipientName: "", recipientAccountNumber: "", recipientBank: "", amount: "", currency: "GBP", note: "" })
         router.refresh()
     }
 
-    // Group banks by category
     const groups = BANKS.reduce<Record<string, typeof BANKS>>((acc, b) => {
         if (!acc[b.group]) acc[b.group] = []
         acc[b.group].push(b)
@@ -270,7 +223,6 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
     return (
         <div className="transfer">
 
-            {/* ── Header ── */}
             <header className="transfer__header">
                 <div>
                     <p className="transfer__pretitle">Fund Movement</p>
@@ -284,7 +236,6 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
 
             <div className="transfer__body">
 
-                {/* ── Form ── */}
                 <form className="transfer__form" onSubmit={handleSubmit} noValidate>
 
                     {globalError && (
@@ -294,7 +245,6 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                         </div>
                     )}
 
-                    {/* Recipient section */}
                     <fieldset className="transfer__fieldset">
                         <legend className="transfer__legend">Recipient Details</legend>
 
@@ -316,18 +266,15 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                             <label htmlFor="recipientAccountNumber">Account Number / IBAN</label>
                             <input
                                 id="recipientAccountNumber" name="recipientAccountNumber" type="text"
-                                placeholder={isInternal ? "e.g. GPW9039327915 or GPW9039327915-CHK" : "e.g. DE89370400440532013000"}
+                                placeholder={isInternal ? "e.g. GPW9039327915 or GPW9039327915-CHK" : "e.g. GB29 NWBK 6016 1331 9268 19"}
                                 value={fields.recipientAccountNumber} onChange={handleChange}
                                 disabled={isPending} aria-invalid={!!errors.recipientAccountNumber}
                             />
-                            {/* Live verification indicator for internal transfers */}
                             {isInternal && acctVerify.status !== "idle" && (
                                 <span
-                                    className={`transfer__acct-verify transfer__acct-verify--${
-                                        acctVerify.status === "valid" ? "valid"
-                                        : acctVerify.status === "invalid" ? "invalid"
-                                        : "checking"
-                                    }`}
+                                    className={`transfer__acct-verify transfer__acct-verify--${acctVerify.status === "valid" ? "valid" :
+                                            acctVerify.status === "invalid" ? "invalid" : "checking"
+                                        }`}
                                     role="status"
                                 >
                                     {acctVerify.status === "checking" && <Loader2 size={12} className="transfer__acct-spin" aria-hidden />}
@@ -350,7 +297,7 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                                     <option value="" disabled>Select institution…</option>
                                     {Object.entries(groups).map(([group, banks]) => (
                                         <optgroup key={group} label={group}>
-                                            {banks.map((b) => (
+                                            {banks.map(b => (
                                                 <option key={b.value} value={b.value}>{b.label}</option>
                                             ))}
                                         </optgroup>
@@ -362,7 +309,6 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                         </div>
                     </fieldset>
 
-                    {/* Transfer details */}
                     <fieldset className="transfer__fieldset">
                         <legend className="transfer__legend">Transfer Details</legend>
 
@@ -371,7 +317,10 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                                 <label htmlFor="amount">Amount</label>
                                 <div className="transfer__amount-wrap">
                                     <span className="transfer__amount-symbol" aria-hidden>
-                                        {fields.currency === "USD" ? "$" : fields.currency === "GBP" ? "£" : fields.currency === "EUR" ? "€" : fields.currency}
+                                        {fields.currency === "GBP" ? "£"
+                                            : fields.currency === "EUR" ? "€"
+                                                : fields.currency === "USD" ? "$"
+                                                    : fields.currency}
                                     </span>
                                     <input
                                         id="amount" name="amount" type="number"
@@ -392,7 +341,7 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                                         value={fields.currency} onChange={handleChange}
                                         disabled={isPending}
                                     >
-                                        {CURRENCIES.map((c) => (
+                                        {CURRENCIES.map(c => (
                                             <option key={c.value} value={c.value}>{c.label}</option>
                                         ))}
                                     </select>
@@ -414,39 +363,31 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                         </div>
                     </fieldset>
 
-                    {/* Footer */}
                     <div className="transfer__footer">
                         <p className="transfer__disclaimer">
-                            All transfers are processed through SEC-regulated clearing networks.
+                            All transfers are processed through FCA-regulated payment networks.
                             International wires may take 1–3 business days to settle.
+                            Faster Payments eligible transfers arrive same day.
                         </p>
                         <div className="transfer__footer-actions">
-                            <button 
-                                type="button" 
-                                className="transfer__cancel" 
-                                onClick={() => router.push('/user')} 
+                            <button
+                                type="button" className="transfer__cancel"
+                                onClick={() => router.push("/user")}
                                 disabled={isPending}
                             >
                                 Cancel
                             </button>
                             <button type="submit" className="transfer__submit" disabled={isPending}>
                                 {isPending ? (
-                                    <>
-                                        <span className="transfer__spinner" aria-hidden />
-                                        Processing…
-                                    </>
+                                    <><span className="transfer__spinner" aria-hidden />Processing…</>
                                 ) : (
-                                    <>
-                                        <Send size={14} aria-hidden />
-                                        Initiate Transfer
-                                    </>
+                                    <><Send size={14} aria-hidden />Initiate Transfer</>
                                 )}
                             </button>
                         </div>
                     </div>
                 </form>
 
-                {/* ── History panel ── */}
                 <aside className="transfer__history">
                     <h2 className="transfer__history-title">Recent Transfers</h2>
                     {recentTransfers.length === 0 ? (
@@ -456,10 +397,10 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                         </div>
                     ) : (
                         <ul className="transfer__history-list" role="list">
-                            {recentTransfers.map((t) => {
+                            {recentTransfers.map(t => {
                                 const meta = STATUS_META[t.status] ?? STATUS_META.PENDING
                                 const Icon = meta.Icon
-                                const bankLabel = BANKS.find((b) => b.value === t.recipientBank)?.label ?? t.recipientBank
+                                const bankLabel = BANKS.find(b => b.value === t.recipientBank)?.label ?? t.recipientBank
                                 return (
                                     <li key={t.id} className="transfer__history-item">
                                         <div className="transfer__history-icon" aria-hidden>
@@ -489,7 +430,6 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                 </aside>
             </div>
 
-            {/* ── Modal ── */}
             {modalData?.isVisible && (
                 <div className="transfer__modal-overlay">
                     <div className="transfer__modal">
@@ -510,9 +450,9 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                                 </div>
                             )}
                             <p className="transfer__modal-status">
-                                {modalData.isInternal 
-                                    ? "Your internal transfer has been processed successfully." 
-                                    : "Transaction Pending. Please contact customer care for approval."}
+                                {modalData.isInternal
+                                    ? "Your internal transfer has been processed successfully."
+                                    : "Transaction pending. Please contact customer care for approval."}
                             </p>
                             <div className="transfer__modal-details">
                                 <div className="transfer__modal-detail">
@@ -534,9 +474,7 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                             </div>
                         </div>
                         <div className="transfer__modal-footer">
-                            <button onClick={closeModal} className="transfer__modal-btn">
-                                Close
-                            </button>
+                            <button onClick={closeModal} className="transfer__modal-btn">Close</button>
                         </div>
                     </div>
                 </div>

@@ -4,7 +4,7 @@ import { useState, useTransition, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import {
     Search, ChevronDown, ChevronUp, BadgeCheck,
-    Users, DollarSign, TrendingUp, X, Wallet,
+    Users, PoundSterling, TrendingUp, X, Wallet,
     Edit, ShieldAlert, Trash2, AlertCircle
 } from "lucide-react"
 import { updateAccountBalanceAction } from "@/actions/admin"
@@ -59,29 +59,29 @@ const ACCOUNT_TYPE_COLORS: Record<AccountType, string> = {
 }
 
 const BALANCE_PRESETS: BalancePreset[] = [
-    { label: "+ $1,000", delta: 1_000 },
-    { label: "+ $5,000", delta: 5_000 },
-    { label: "+ $10,000", delta: 10_000 },
-    { label: "+ $50,000", delta: 50_000 },
-    { label: "+ $100,000", delta: 100_000 },
-    { label: "+ $500,000", delta: 500_000 },
-    { label: "+ $1,000,000", delta: 1_000_000 },
-    { label: "− $1,000", delta: -1_000 },
-    { label: "− $5,000", delta: -5_000 },
-    { label: "− $10,000", delta: -10_000 },
-    { label: "− $50,000", delta: -50_000 },
-    { label: "Set to $0", absolute: 0 },
+    { label: "+ £1,000", delta: 1_000 },
+    { label: "+ £5,000", delta: 5_000 },
+    { label: "+ £10,000", delta: 10_000 },
+    { label: "+ £50,000", delta: 50_000 },
+    { label: "+ £100,000", delta: 100_000 },
+    { label: "+ £500,000", delta: 500_000 },
+    { label: "+ £1,000,000", delta: 1_000_000 },
+    { label: "− £1,000", delta: -1_000 },
+    { label: "− £5,000", delta: -5_000 },
+    { label: "− £10,000", delta: -10_000 },
+    { label: "− £50,000", delta: -50_000 },
+    { label: "Set to £0", absolute: 0 },
 ]
 
-function fmt(n: number, currency = "USD") {
-    return new Intl.NumberFormat("en-US", {
+function fmt(n: number, currency = "GBP") {
+    return new Intl.NumberFormat("en-GB", {
         style: "currency", currency, minimumFractionDigits: 2
     }).format(n)
 }
 
 function fmtDate(iso: string) {
-    return new Intl.DateTimeFormat("en-US", {
-        month: "short", day: "numeric", year: "numeric"
+    return new Intl.DateTimeFormat("en-GB", {
+        day: "numeric", month: "short", year: "numeric"
     }).format(new Date(iso))
 }
 
@@ -100,7 +100,6 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
     const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
     const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
-    // Per-user dropdown state
     const [selectedAccount, setSelectedAccount] = useState<Record<string, string>>({})
     const [customAmount, setCustomAmount] = useState<Record<string, string>>({})
     const [customMode, setCustomMode] = useState<Record<string, "add" | "subtract" | "set">>({})
@@ -108,7 +107,6 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
     const [feedbacks, setFeedbacks] = useState<Record<string, { text: string; accountId: string }>>({})
     const [errors, setErrors] = useState<Record<string, string>>({})
 
-    // Modal states
     const [editUser, setEditUser] = useState<User | null>(null)
     const [editForm, setEditForm] = useState({ fullName: "", email: "", ssn: "", avatarUrl: "" })
     const [editError, setEditError] = useState("")
@@ -156,17 +154,13 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
 
     const applyBalance = (userId: string, accountId: string, newBalance: number) => {
         if (newBalance < 0) {
-            setErrors((p) => ({ ...p, [userId]: "Balance cannot go below $0." }))
+            setErrors((p) => ({ ...p, [userId]: "Balance cannot go below £0." }))
             return
         }
         setErrors((p) => ({ ...p, [userId]: "" }))
-
         startTransition(async () => {
             const result = await updateAccountBalanceAction(accountId, newBalance)
-            if (result?.error) {
-                setErrors((p) => ({ ...p, [userId]: result.error }))
-                return
-            }
+            if (result?.error) { setErrors((p) => ({ ...p, [userId]: result.error })); return }
             setUsers((prev) => prev.map((u) =>
                 u.id !== userId ? u : {
                     ...u,
@@ -194,10 +188,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
         if (!account) return
         const raw = parseFloat(customAmount[user.id] ?? "")
         const mode = customMode[user.id] ?? "add"
-        if (isNaN(raw) || raw < 0) {
-            setErrors((p) => ({ ...p, [user.id]: "Enter a valid positive number." }))
-            return
-        }
+        if (isNaN(raw) || raw < 0) { setErrors((p) => ({ ...p, [user.id]: "Enter a valid positive number." })); return }
         let next = account.balance
         if (mode === "add") next = account.balance + raw
         if (mode === "subtract") next = account.balance - raw
@@ -210,13 +201,8 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
         setEditError("")
         startTransition(async () => {
             const result = await updateUserAction(editUser.id, editForm)
-            if (result.error) {
-                setEditError(result.error)
-            } else {
-                setUsers(users.map(u => u.id === editUser.id ? { ...u, ...editForm } : u))
-                setEditUser(null)
-                router.refresh()
-            }
+            if (result.error) { setEditError(result.error) }
+            else { setUsers(users.map(u => u.id === editUser.id ? { ...u, ...editForm } : u)); setEditUser(null); router.refresh() }
         })
     }
 
@@ -224,19 +210,11 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
         if (!suspendUser) return
         setSuspendError("")
         const days = parseInt(suspendDays)
-        if (isNaN(days) || days <= 0) {
-            setSuspendError("Please enter a valid number of days.")
-            return
-        }
+        if (isNaN(days) || days <= 0) { setSuspendError("Please enter a valid number of days."); return }
         startTransition(async () => {
             const result = await suspendUserAction(suspendUser.id, days)
-            if (result.error) {
-                setSuspendError(result.error)
-            } else {
-                setUsers(users.map(u => u.id === suspendUser.id ? { ...u, status: "SUSPENDED" } : u)) // suspendedUntil doesn't need to be strictly mapped if we refresh
-                setSuspendUser(null)
-                router.refresh()
-            }
+            if (result.error) { setSuspendError(result.error) }
+            else { setUsers(users.map(u => u.id === suspendUser.id ? { ...u, status: "SUSPENDED" } : u)); setSuspendUser(null); router.refresh() }
         })
     }
 
@@ -245,13 +223,8 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
         setSuspendError("")
         startTransition(async () => {
             const result = await unsuspendUserAction(suspendUser.id)
-            if (result.error) {
-                setSuspendError(result.error)
-            } else {
-                setUsers(users.map(u => u.id === suspendUser.id ? { ...u, status: "ACTIVE", suspendedUntil: null } : u))
-                setSuspendUser(null)
-                router.refresh()
-            }
+            if (result.error) { setSuspendError(result.error) }
+            else { setUsers(users.map(u => u.id === suspendUser.id ? { ...u, status: "ACTIVE", suspendedUntil: null } : u)); setSuspendUser(null); router.refresh() }
         })
     }
 
@@ -260,18 +233,14 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
         setDeleteError("")
         startTransition(async () => {
             const result = await deleteUserAction(deleteUser.id)
-            if (result.error) {
-                setDeleteError(result.error)
-            } else {
-                setUsers(users.filter(u => u.id !== deleteUser.id))
-                setDeleteUser(null)
-                router.refresh()
-            }
+            if (result.error) { setDeleteError(result.error) }
+            else { setUsers(users.filter(u => u.id !== deleteUser.id)); setDeleteUser(null); router.refresh() }
         })
     }
 
     return (
         <div className="adminusers__inner">
+
             {/* ── Header ── */}
             <header className="adminusers__header">
                 <div>
@@ -288,7 +257,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                         <span>{verifiedCount} verified</span>
                     </div>
                     <div className="adminusers__hstat adminusers__hstat--gold">
-                        <DollarSign size={13} aria-hidden />
+                        <PoundSterling size={13} aria-hidden />
                         <span>{fmt(totalAUM)} total AUM</span>
                     </div>
                 </div>
@@ -314,11 +283,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                 <div className="adminusers__sort-strip">
                     <span className="adminusers__sort-label">Sort:</span>
                     {(["fullName", "createdAt"] as const).map((f) => (
-                        <button
-                            key={f}
-                            className={`adminusers__sort-btn${sortField === f ? " active" : ""}`}
-                            onClick={() => toggleSort(f)}
-                        >
+                        <button key={f} className={`adminusers__sort-btn${sortField === f ? " active" : ""}`} onClick={() => toggleSort(f)}>
                             {f === "fullName" ? "Name" : "Joined"}
                             <SortIcon field={f} />
                         </button>
@@ -337,18 +302,10 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                     <table className="adminusers__table">
                         <thead>
                             <tr>
-                                <th>
-                                    <button onClick={() => toggleSort("fullName")} className="adminusers__th-btn">
-                                        Client <SortIcon field="fullName" />
-                                    </button>
-                                </th>
+                                <th><button onClick={() => toggleSort("fullName")} className="adminusers__th-btn">Client <SortIcon field="fullName" /></button></th>
                                 <th>Accounts</th>
                                 <th>Activity</th>
-                                <th>
-                                    <button onClick={() => toggleSort("createdAt")} className="adminusers__th-btn">
-                                        Joined <SortIcon field="createdAt" />
-                                    </button>
-                                </th>
+                                <th><button onClick={() => toggleSort("createdAt")} className="adminusers__th-btn">Joined <SortIcon field="createdAt" /></button></th>
                                 <th>Manage</th>
                             </tr>
                         </thead>
@@ -366,14 +323,14 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                         {/* Client */}
                                         <td>
                                             <div className="adminusers__client">
-                                                <div className="adminusers__avatar" style={user.status === 'SUSPENDED' ? { opacity: 0.5 } : {}}>
+                                                <div className="adminusers__avatar" style={user.status === "SUSPENDED" ? { opacity: 0.5 } : {}}>
                                                     {user.avatarUrl
                                                         ? <img src={user.avatarUrl} alt={user.fullName} />
                                                         : <span>{initials(user.fullName)}</span>}
                                                 </div>
                                                 <div className="adminusers__client-info">
-                                                    <span className="adminusers__client-name" style={user.status === 'SUSPENDED' ? { color: '#ef4444' } : {}}>
-                                                        {user.fullName} {user.status === 'SUSPENDED' && '(Suspended)'}
+                                                    <span className="adminusers__client-name" style={user.status === "SUSPENDED" ? { color: "#ef4444" } : {}}>
+                                                        {user.fullName} {user.status === "SUSPENDED" && "(Suspended)"}
                                                     </span>
                                                     <span className="adminusers__client-email">{user.email}</span>
                                                 </div>
@@ -405,9 +362,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                             </span>
                                                         </div>
                                                     ))}
-                                                    <div className="adminusers__account-total">
-                                                        Total: {fmt(totalUser)}
-                                                    </div>
+                                                    <div className="adminusers__account-total">Total: {fmt(totalUser)}</div>
                                                 </div>
                                             )}
                                         </td>
@@ -422,14 +377,12 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
 
                                         {/* Joined */}
                                         <td>
-                                            <span className="adminusers__mono adminusers__mono--sm">
-                                                {fmtDate(user.createdAt)}
-                                            </span>
+                                            <span className="adminusers__mono adminusers__mono--sm">{fmtDate(user.createdAt)}</span>
                                         </td>
 
                                         {/* Manage */}
                                         <td className="adminusers__action-cell">
-                                            <div className="adminusers__dropdown-wrap" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                            <div className="adminusers__dropdown-wrap" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                                                 {user.accounts.length > 0 && (
                                                     <button
                                                         className={`adminusers__dropdown-trigger${isOpen ? " open" : ""}`}
@@ -437,33 +390,16 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                         disabled={isPending}
                                                         aria-expanded={isOpen}
                                                     >
-                                                        Adjust
-                                                        <ChevronDown size={12} aria-hidden />
+                                                        Adjust <ChevronDown size={12} aria-hidden />
                                                     </button>
                                                 )}
-                                                
-                                                <button 
-                                                    className="adminusers__icon-btn edit-btn" 
-                                                    onClick={() => {
-                                                        setEditUser(user)
-                                                        setEditForm({ fullName: user.fullName, email: user.email, ssn: user.ssn || "", avatarUrl: user.avatarUrl || "" })
-                                                    }}
-                                                    title="Edit User"
-                                                >
+                                                <button className="adminusers__icon-btn edit-btn" onClick={() => { setEditUser(user); setEditForm({ fullName: user.fullName, email: user.email, ssn: user.ssn || "", avatarUrl: user.avatarUrl || "" }) }} title="Edit User">
                                                     <Edit size={14} />
                                                 </button>
-                                                <button 
-                                                    className="adminusers__icon-btn suspend-btn" 
-                                                    onClick={() => setSuspendUser(user)}
-                                                    title="Suspend User"
-                                                >
-                                                    <ShieldAlert size={14} color={user.status === 'SUSPENDED' ? '#f59e0b' : 'currentColor'} />
+                                                <button className="adminusers__icon-btn suspend-btn" onClick={() => setSuspendUser(user)} title="Suspend User">
+                                                    <ShieldAlert size={14} color={user.status === "SUSPENDED" ? "#f59e0b" : "currentColor"} />
                                                 </button>
-                                                <button 
-                                                    className="adminusers__icon-btn delete-btn" 
-                                                    onClick={() => setDeleteUser(user)}
-                                                    title="Delete User"
-                                                >
+                                                <button className="adminusers__icon-btn delete-btn" onClick={() => setDeleteUser(user)} title="Delete User">
                                                     <Trash2 size={14} color="#ef4444" />
                                                 </button>
 
@@ -474,28 +410,20 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                                 <Wallet size={13} aria-hidden />
                                                                 <span>{user.fullName}</span>
                                                             </div>
-                                                            <button className="adminusers__dropdown-close" onClick={() => setOpenDropdown(null)} aria-label="Close">
-                                                                <X size={12} />
-                                                            </button>
+                                                            <button className="adminusers__dropdown-close" onClick={() => setOpenDropdown(null)} aria-label="Close"><X size={12} /></button>
                                                         </div>
 
-                                                        {/* Account selector */}
                                                         <div className="adminusers__account-selector">
                                                             <p className="adminusers__selector-label">Select Account</p>
                                                             <div className="adminusers__selector-tabs">
                                                                 {user.accounts.map((acc) => (
                                                                     <button
                                                                         key={acc.id}
-                                                                        className={`adminusers__selector-tab${(selectedAccount[user.id] ?? user.accounts[0].id) === acc.id ? " active" : ""
-                                                                            }`}
+                                                                        className={`adminusers__selector-tab${(selectedAccount[user.id] ?? user.accounts[0].id) === acc.id ? " active" : ""}`}
                                                                         onClick={() => setSelectedAccount((p) => ({ ...p, [user.id]: acc.id }))}
                                                                     >
-                                                                        <span className={`adminusers__tab-type ${ACCOUNT_TYPE_COLORS[acc.type]}`}>
-                                                                            {ACCOUNT_TYPE_LABELS[acc.type]}
-                                                                        </span>
-                                                                        <span className="adminusers__tab-balance">
-                                                                            {fmt(acc.balance, acc.currency)}
-                                                                        </span>
+                                                                        <span className={`adminusers__tab-type ${ACCOUNT_TYPE_COLORS[acc.type]}`}>{ACCOUNT_TYPE_LABELS[acc.type]}</span>
+                                                                        <span className="adminusers__tab-balance">{fmt(acc.balance, acc.currency)}</span>
                                                                     </button>
                                                                 ))}
                                                             </div>
@@ -506,7 +434,6 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                             )}
                                                         </div>
 
-                                                        {/* Presets */}
                                                         <div className="adminusers__presets">
                                                             {BALANCE_PRESETS.map((preset) => (
                                                                 <button
@@ -520,7 +447,6 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                             ))}
                                                         </div>
 
-                                                        {/* Custom input */}
                                                         <div className="adminusers__custom">
                                                             <p className="adminusers__custom-label">Custom amount</p>
                                                             <div className="adminusers__custom-row">
@@ -534,7 +460,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                                     <option value="set">Set to</option>
                                                                 </select>
                                                                 <div className="adminusers__custom-input-wrap">
-                                                                    <span className="adminusers__custom-symbol">$</span>
+                                                                    <span className="adminusers__custom-symbol">£</span>
                                                                     <input
                                                                         type="number"
                                                                         className="adminusers__custom-input"
@@ -546,13 +472,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                                         onKeyDown={(e) => e.key === "Enter" && handleCustomSubmit(user)}
                                                                     />
                                                                 </div>
-                                                                <button
-                                                                    className="adminusers__custom-apply"
-                                                                    onClick={() => handleCustomSubmit(user)}
-                                                                    disabled={isPending}
-                                                                >
-                                                                    Apply
-                                                                </button>
+                                                                <button className="adminusers__custom-apply" onClick={() => handleCustomSubmit(user)} disabled={isPending}>Apply</button>
                                                             </div>
                                                             {error && <p className="adminusers__error" role="alert">{error}</p>}
                                                         </div>
@@ -568,11 +488,9 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                 </div>
             )}
 
-            <p className="adminusers__count">
-                Showing {filtered.length} of {users.length} clients
-            </p>
+            <p className="adminusers__count">Showing {filtered.length} of {users.length} clients</p>
 
-            {/* Modals */}
+            {/* ── Edit Modal ── */}
             {editUser && (
                 <div className="admin-modal-overlay">
                     <div className="admin-modal">
@@ -582,22 +500,10 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                         </div>
                         <div className="admin-modal-body">
                             {editError && <div className="adminusers__error">{editError}</div>}
-                            <div className="admin-modal-field">
-                                <label>Full Name</label>
-                                <input value={editForm.fullName} onChange={e => setEditForm({...editForm, fullName: e.target.value})} />
-                            </div>
-                            <div className="admin-modal-field">
-                                <label>Email</label>
-                                <input value={editForm.email} onChange={e => setEditForm({...editForm, email: e.target.value})} />
-                            </div>
-                            <div className="admin-modal-field">
-                                <label>Tax ID / SSN</label>
-                                <input value={editForm.ssn} onChange={e => setEditForm({...editForm, ssn: e.target.value})} />
-                            </div>
-                            <div className="admin-modal-field">
-                                <label>Avatar URL</label>
-                                <input value={editForm.avatarUrl} onChange={e => setEditForm({...editForm, avatarUrl: e.target.value})} />
-                            </div>
+                            <div className="admin-modal-field"><label>Full Name</label><input value={editForm.fullName} onChange={e => setEditForm({ ...editForm, fullName: e.target.value })} /></div>
+                            <div className="admin-modal-field"><label>Email</label><input value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
+                            <div className="admin-modal-field"><label>National Insurance / Tax ID</label><input value={editForm.ssn} onChange={e => setEditForm({ ...editForm, ssn: e.target.value })} /></div>
+                            <div className="admin-modal-field"><label>Avatar URL</label><input value={editForm.avatarUrl} onChange={e => setEditForm({ ...editForm, avatarUrl: e.target.value })} /></div>
                         </div>
                         <div className="admin-modal-footer">
                             <button onClick={() => setEditUser(null)} className="admin-modal-btn">Cancel</button>
@@ -607,25 +513,25 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                 </div>
             )}
 
+            {/* ── Suspend Modal ── */}
             {suspendUser && (
                 <div className="admin-modal-overlay">
-                    <div className={`admin-modal ${suspendUser.status === 'SUSPENDED' ? 'admin-modal--warning' : 'admin-modal--danger'}`}>
+                    <div className={`admin-modal ${suspendUser.status === "SUSPENDED" ? "admin-modal--warning" : "admin-modal--danger"}`}>
                         <div className="admin-modal-header">
-                            <h2>{suspendUser.status === 'SUSPENDED' ? 'Manage Suspension' : 'Suspend User'}</h2>
+                            <h2>{suspendUser.status === "SUSPENDED" ? "Manage Suspension" : "Suspend User"}</h2>
                             <button onClick={() => setSuspendUser(null)} className="admin-modal-close" aria-label="Close modal"><X size={16} /></button>
                         </div>
                         <div className="admin-modal-body">
                             {suspendError && <div className="adminusers__error">{suspendError}</div>}
-                            <p style={{ margin: 0, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', textAlign: 'left' }}>
+                            <p style={{ margin: 0, fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", textAlign: "left" }}>
                                 User: <strong>{suspendUser.fullName}</strong>
                             </p>
-                            
-                            {suspendUser.status === 'SUSPENDED' ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', textAlign: 'left' }}>
-                                    <p style={{ margin: 0, color: '#f59e0b', fontSize: 'var(--font-size-sm)', lineHeight: 1.5 }}>
-                                        This account is currently suspended until {suspendUser.suspendedUntil ? new Date(suspendUser.suspendedUntil).toLocaleDateString() : 'indefinitely'}.
+                            {suspendUser.status === "SUSPENDED" ? (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", textAlign: "left" }}>
+                                    <p style={{ margin: 0, color: "#f59e0b", fontSize: "var(--font-size-sm)", lineHeight: 1.5 }}>
+                                        This account is currently suspended until {suspendUser.suspendedUntil ? new Date(suspendUser.suspendedUntil).toLocaleDateString("en-GB") : "indefinitely"}.
                                     </p>
-                                    <button onClick={handleUnsuspend} className="admin-modal-btn admin-modal-btn--warning" disabled={isPending} style={{ width: 'auto', alignSelf: 'flex-start' }}>Lift Suspension</button>
+                                    <button onClick={handleUnsuspend} className="admin-modal-btn admin-modal-btn--warning" disabled={isPending} style={{ width: "auto", alignSelf: "flex-start" }}>Lift Suspension</button>
                                 </div>
                             ) : (
                                 <div className="admin-modal-field">
@@ -634,7 +540,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                 </div>
                             )}
                         </div>
-                        {suspendUser.status !== 'SUSPENDED' && (
+                        {suspendUser.status !== "SUSPENDED" && (
                             <div className="admin-modal-footer">
                                 <button onClick={() => setSuspendUser(null)} className="admin-modal-btn">Cancel</button>
                                 <button onClick={handleSuspendSubmit} className="admin-modal-btn admin-modal-btn--danger" disabled={isPending}>Suspend Account</button>
@@ -644,6 +550,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                 </div>
             )}
 
+            {/* ── Delete Modal ── */}
             {deleteUser && (
                 <div className="admin-modal-overlay">
                     <div className="admin-modal admin-modal--danger">
@@ -651,13 +558,13 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                             <h2>Delete User</h2>
                             <button onClick={() => setDeleteUser(null)} className="admin-modal-close" aria-label="Close modal"><X size={16} /></button>
                         </div>
-                        <div className="admin-modal-body" style={{ gap: 'var(--space-3)' }}>
+                        <div className="admin-modal-body" style={{ gap: "var(--space-3)" }}>
                             {deleteError && <div className="adminusers__error">{deleteError}</div>}
-                            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', color: '#ef4444' }}>
+                            <div style={{ display: "flex", gap: "12px", alignItems: "center", color: "#ef4444" }}>
                                 <AlertCircle size={24} />
-                                <strong style={{ fontSize: 'var(--font-size-md)' }}>Warning: Irreversible Action</strong>
+                                <strong style={{ fontSize: "var(--font-size-md)" }}>Warning: Irreversible Action</strong>
                             </div>
-                            <p style={{ lineHeight: 1.6, fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)', margin: 0, textAlign: 'left' }}>
+                            <p style={{ lineHeight: 1.6, fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", margin: 0, textAlign: "left" }}>
                                 Are you sure you want to permanently delete <strong>{deleteUser.fullName}</strong>? This will instantly remove their account, balances, loans, and all transaction history. This action cannot be undone.
                             </p>
                         </div>

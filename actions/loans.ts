@@ -14,8 +14,8 @@ const LoanApplicationSchema = z.object({
     }),
     principalAmount: z.coerce
         .number({ message: "Enter a valid amount." })
-        .min(1000, "Minimum loan amount is $1,000.")
-        .max(10_000_000, "Maximum loan amount is $10,000,000."),
+        .min(1000, "Minimum loan amount is £1,000.")
+        .max(10_000_000, "Maximum loan amount is £10,000,000."),
     termMonths: z.coerce
         .number({ message: "Select a repayment term." })
         .int()

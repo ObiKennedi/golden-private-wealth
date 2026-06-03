@@ -15,9 +15,9 @@ interface Props {
 }
 
 function fmt(val: number) {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-UK", {
         style: "currency",
-        currency: "USD",
+        currency: "GBP",
         minimumFractionDigits: 2,
     }).format(val);
 }

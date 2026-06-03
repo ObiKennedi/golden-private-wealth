@@ -15,7 +15,7 @@ import {
 import "@/styles/user/transactions.scss";
 
 // Replicate formatting from page
-function fmt(val: number | string, currency = "USD") {
+function fmt(val: number | string, currency = "GDP") {
     const n = typeof val === "number" ? val : Number(val);
     return new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -26,7 +26,7 @@ function fmt(val: number | string, currency = "USD") {
 
 function fmtDate(date: Date | string) {
     const d = typeof date === "string" ? new Date(date) : date;
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-UK", {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -35,7 +35,7 @@ function fmtDate(date: Date | string) {
 
 function fmtTime(date: Date | string) {
     const d = typeof date === "string" ? new Date(date) : date;
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-UK", {
         hour: "numeric",
         minute: "2-digit",
         hour12: true,
@@ -127,8 +127,8 @@ export function TransactionsList({ transactions, accountIds }: TransactionsListP
                                 // Pick icon — for transfers use direction-aware arrows
                                 const TxIcon = tx.type === "TRANSFER"
                                     ? isReceivedTransfer ? ArrowDownLeft
-                                    : isSentTransfer   ? ArrowUpRight
-                                    : ArrowLeftRight
+                                        : isSentTransfer ? ArrowUpRight
+                                            : ArrowLeftRight
                                     : ((TX_ICON as any)[tx.type] ?? ArrowLeftRight);
 
                                 // Determine account label
@@ -196,13 +196,13 @@ export function TransactionsList({ transactions, accountIds }: TransactionsListP
 
                 const statusColor =
                     selectedTx.status === "COMPLETED" ? "#4ade80" :
-                    selectedTx.status === "PENDING" ? "var(--color-gold-400)" :
-                    "#f87171";
+                        selectedTx.status === "PENDING" ? "var(--color-gold-400)" :
+                            "#f87171";
 
                 const StatusIcon =
                     selectedTx.status === "COMPLETED" ? CheckCircle2 :
-                    selectedTx.status === "PENDING" ? Clock :
-                    XCircle;
+                        selectedTx.status === "PENDING" ? Clock :
+                            XCircle;
 
                 return (
                     <div className="tx-modal-overlay" onClick={handleCloseReceipt}>
