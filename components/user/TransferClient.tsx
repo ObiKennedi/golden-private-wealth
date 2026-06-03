@@ -89,7 +89,7 @@ const STATUS_META: Record<string, { cls: string; Icon: typeof Clock; label: stri
 
 function fmt(amount: number, currency = "GBP") {
     return new Intl.NumberFormat("en-GB", {
-        style: "currency", currency, minimumFractionDigits: 2,
+        style: "currency", currency: currency === "USD" ? "GBP" : currency, minimumFractionDigits: 2,
     }).format(amount)
 }
 

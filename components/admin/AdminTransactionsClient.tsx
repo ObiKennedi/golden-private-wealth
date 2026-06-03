@@ -57,7 +57,7 @@ interface Props {
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 function fmt(n: number, currency = "GBP") {
-    return new Intl.NumberFormat("en-GB", { style: "currency", currency, minimumFractionDigits: 2 }).format(n)
+    return new Intl.NumberFormat("en-GB", { style: "currency", currency: currency === "USD" ? "GBP" : currency, minimumFractionDigits: 2 }).format(n)
 }
 
 function fmtDate(iso: string) {

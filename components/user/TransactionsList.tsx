@@ -19,7 +19,7 @@ function fmt(val: number | string, currency = "GBP") {
     const n = typeof val === "number" ? val : Number(val);
     return new Intl.NumberFormat("en-GB", {
         style: "currency",
-        currency,
+        currency: currency === "USD" ? "GBP" : currency,
         minimumFractionDigits: 2,
     }).format(n);
 }

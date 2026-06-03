@@ -25,7 +25,7 @@ const CREDIT_TYPES = new Set(["DEPOSIT", "YIELD_PAYOUT", "ASSET_SALE"]);
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function fmt(val: number, currency = "GBP") {
-    return new Intl.NumberFormat("en-GB", { style: "currency", currency, minimumFractionDigits: 2 }).format(val);
+    return new Intl.NumberFormat("en-GB", { style: "currency", currency: currency === "USD" ? "GBP" : currency, minimumFractionDigits: 2 }).format(val);
 }
 
 function fmtDate(iso: string) {

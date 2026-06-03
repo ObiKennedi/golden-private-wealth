@@ -23,7 +23,7 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-
 function fmt(val: number, currency = "GBP") {
     return new Intl.NumberFormat("en-GB", {
         style: "currency",
-        currency,
+        currency: currency === "USD" ? "GBP" : currency,
         minimumFractionDigits: 2,
     }).format(val);
 }
