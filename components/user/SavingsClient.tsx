@@ -24,16 +24,16 @@ const CREDIT_TYPES = new Set(["DEPOSIT", "YIELD_PAYOUT", "ASSET_SALE"]);
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function fmt(val: number, currency = "USD") {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2 }).format(val);
+function fmt(val: number, currency = "GBP") {
+    return new Intl.NumberFormat("en-GB", { style: "currency", currency, minimumFractionDigits: 2 }).format(val);
 }
 
 function fmtDate(iso: string) {
-    return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso));
+    return new Intl.DateTimeFormat("en-GB", { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso));
 }
 
 function fmtTime(iso: string) {
-    return new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(iso));
+    return new Intl.DateTimeFormat("en-GB", { hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(iso));
 }
 
 // ── Types ──────────────────────────────────────────────────────────────────

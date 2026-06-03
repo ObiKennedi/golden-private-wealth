@@ -1,15 +1,38 @@
 "use client";
 
 import { PiggyBank, Wallet, CreditCard, TrendingUp } from "lucide-react";
+import { useBalanceVisibility } from "@/lib/useBalanceVisibility";
 
-interface Props {
-    savingsBalance: string;
-    checkingBalance: string;
-    loanBalance: string;
-    investmentBalance: string;
+function fmt(n: number, currency = "GBP") {
+    return new Intl.NumberFormat("en-GB", {
+        style: "currency",
+        currency,
+        minimumFractionDigits: 2,
+    }).format(n);
 }
 
-export function TxSummaryAmounts({ savingsBalance, checkingBalance, loanBalance, investmentBalance }: Props) {
+interface Props {
+    savingsBalance: number;
+    savingsCurrency?: string;
+    checkingBalance: number;
+    checkingCurrency?: string;
+    loanBalance: number;
+    investmentBalance: number;
+    investmentCurrency?: string;
+}
+
+export function TxSummaryAmounts({
+    savingsBalance, savingsCurrency = "GBP",
+    checkingBalance, checkingCurrency = "GBP",
+    loanBalance,
+    investmentBalance, investmentCurrency = "GBP",
+}: Props) {
+    const { visible } = useBalanceVisibility();
+    const mask = "***";
+    const s = visible ? fmt(savingsBalance, savingsCurrency) : mask;
+    const c = visible ? fmt(checkingBalance, checkingCurrency) : mask;
+    const l = visible ? fmt(loanBalance) : mask;
+    const i = visible ? fmt(investmentBalance, investmentCurrency) : mask;
 
     return (
         <div className="txpage__summary" style={{ alignItems: "center", gap: "var(--space-3)" }}>
@@ -20,7 +43,7 @@ export function TxSummaryAmounts({ savingsBalance, checkingBalance, loanBalance,
                     Savings
                 </span>
                 <span className="txpage__summary-amount txpage__summary-amount--credit">
-                    { savingsBalance }
+                    {s}
                 </span>
             </div>
 
@@ -33,7 +56,7 @@ export function TxSummaryAmounts({ savingsBalance, checkingBalance, loanBalance,
                     Checking
                 </span>
                 <span className="txpage__summary-amount">
-                    { checkingBalance }
+                    {c}
                 </span>
             </div>
 
@@ -46,7 +69,7 @@ export function TxSummaryAmounts({ savingsBalance, checkingBalance, loanBalance,
                     Loan
                 </span>
                 <span className="txpage__summary-amount txpage__summary-amount--debit">
-                    { loanBalance }
+                    {l}
                 </span>
             </div>
 
@@ -59,7 +82,7 @@ export function TxSummaryAmounts({ savingsBalance, checkingBalance, loanBalance,
                     Investment
                 </span>
                 <span className="txpage__summary-amount" style={{ color: "var(--color-gold-400)" }}>
-                    { investmentBalance }
+                    {i}
                 </span>
             </div>
         </div>

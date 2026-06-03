@@ -124,7 +124,7 @@ export async function submitTransferAction(prevState: any, formData: FormData) {
             }
 
             if (Number(senderAccount.balance) < amount) {
-                return { globalError: `Insufficient balance. Your checking account holds ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(Number(senderAccount.balance))}, but you tried to send ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount)}.` }
+                return { globalError: `Insufficient balance. Your checking account holds ${new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", minimumFractionDigits: 2 }).format(amount)}.` }
             }
 
             await prisma.$transaction(async (tx) => {

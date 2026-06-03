@@ -15,9 +15,9 @@ import {
 import "@/styles/user/transactions.scss";
 
 // Replicate formatting from page
-function fmt(val: number | string, currency = "GDP") {
+function fmt(val: number | string, currency = "GBP") {
     const n = typeof val === "number" ? val : Number(val);
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-GB", {
         style: "currency",
         currency,
         minimumFractionDigits: 2,

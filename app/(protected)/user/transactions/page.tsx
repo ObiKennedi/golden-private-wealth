@@ -7,11 +7,13 @@ import { TxSummaryAmounts } from "@/components/user/TxSummaryAmounts";
 import { TransactionsList } from "@/components/user/TransactionsList";
 import "@/styles/user/transactions.scss";
 
+
+
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function fmt(val: { toFixed: (n: number) => string } | number, currency = "GDP") {
+function fmt(val: { toFixed: (n: number) => string } | number, currency = "GBP") {
     const n = typeof val === "number" ? val : Number(val);
     return new Intl.NumberFormat("en-UK", {
         style: "currency",
@@ -86,6 +88,7 @@ export default async function TransactionsPage() {
         } : null,
     }));
 
+
     return (
         <div className="txpage">
 
@@ -96,10 +99,13 @@ export default async function TransactionsPage() {
                     <h1 className="txpage__title">Transactions</h1>
                 </div>
                 <TxSummaryAmounts
-                    savingsBalance={fmt(Number(savings?.balance ?? 0), savings?.currency ?? "USD")}
-                    checkingBalance={fmt(Number(checking?.balance ?? 0), checking?.currency ?? "USD")}
-                    loanBalance={fmt(totalLoan)}
-                    investmentBalance={fmt(Number(invest?.balance ?? 0), invest?.currency ?? "USD")}
+                    savingsBalance={Number(savings?.balance ?? 0)}
+                    savingsCurrency={savings?.currency ?? "GBP"}
+                    checkingBalance={Number(checking?.balance ?? 0)}
+                    checkingCurrency={checking?.currency ?? "GBP"}
+                    loanBalance={totalLoan}
+                    investmentBalance={Number(invest?.balance ?? 0)}
+                    investmentCurrency={invest?.currency ?? "GBP"}
                 />
             </header>
 

@@ -333,6 +333,9 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                         {user.fullName} {user.status === "SUSPENDED" && "(Suspended)"}
                                                     </span>
                                                     <span className="adminusers__client-email">{user.email}</span>
+                                                    <span className="adminusers__mono adminusers__mono--sm" style={{ color: "var(--color-gold-600)", letterSpacing: "0.06em" }}>
+                                                        {user.accountNumber}
+                                                    </span>
                                                 </div>
                                                 <span
                                                     className={`adminusers__verified-dot${user.emailVerified ? " adminusers__verified-dot--yes" : ""}`}
