@@ -72,8 +72,8 @@ interface Transaction {
     createdAt: any;
     senderAccountId: string | null;
     receiverAccountId: string | null;
-    senderAccount?: { accountNumber: string; type: string } | null;
-    receiverAccount?: { accountNumber: string; type: string } | null;
+    senderAccount?: { accountNumber: string; type: string; ownerName?: string | null } | null;
+    receiverAccount?: { accountNumber: string; type: string; ownerName?: string | null } | null;
 }
 
 interface TransactionsListProps {
@@ -131,14 +131,16 @@ export function TransactionsList({ transactions, accountIds }: TransactionsListP
                                             : ArrowLeftRight
                                     : ((TX_ICON as any)[tx.type] ?? ArrowLeftRight);
 
-                                // Determine account label
-                                const acctLabel = isCredit
-                                    ? tx.receiverAccount?.accountNumber
-                                        ? `•••• ${tx.receiverAccount.accountNumber.slice(-4)}`
-                                        : "External"
-                                    : tx.senderAccount?.accountNumber
-                                        ? `•••• ${tx.senderAccount.accountNumber.slice(-4)}`
-                                        : "External";
+                                // For received transfers: show who sent it (senderAccount)
+                                // For sent transfers: show who received it (receiverAccount)
+                                const counterpartyAccount = isCredit ? tx.senderAccount : tx.receiverAccount;
+                                const counterpartyName = counterpartyAccount?.ownerName ?? null;
+                                const counterpartyAcctNum = counterpartyAccount?.accountNumber
+                                    ? `•••• ${counterpartyAccount.accountNumber.slice(-4)}`
+                                    : "External";
+                                const acctLabel = counterpartyName
+                                    ? `${isCredit ? "From" : "To"} ${counterpartyName}`
+                                    : counterpartyAcctNum;
 
                                 return (
                                     <li
@@ -264,18 +266,28 @@ export function TransactionsList({ transactions, accountIds }: TransactionsListP
                                     {/* Account information details */}
                                     {selectedTx.senderAccount && (
                                         <div className="receipt-row">
-                                            <span className="row-label">From Account</span>
-                                            <span className="row-value monospace">
-                                                {selectedTx.senderAccount.accountNumber} ({selectedTx.senderAccount.type})
+                                            <span className="row-label">From</span>
+                                            <span className="row-value">
+                                                {selectedTx.senderAccount.ownerName && (
+                                                    <strong style={{ display: "block" }}>{selectedTx.senderAccount.ownerName}</strong>
+                                                )}
+                                                <span className="monospace">
+                                                    {selectedTx.senderAccount.accountNumber} ({selectedTx.senderAccount.type})
+                                                </span>
                                             </span>
                                         </div>
                                     )}
 
                                     {selectedTx.receiverAccount && (
                                         <div className="receipt-row">
-                                            <span className="row-label">To Account</span>
-                                            <span className="row-value monospace">
-                                                {selectedTx.receiverAccount.accountNumber} ({selectedTx.receiverAccount.type})
+                                            <span className="row-label">To</span>
+                                            <span className="row-value">
+                                                {selectedTx.receiverAccount.ownerName && (
+                                                    <strong style={{ display: "block" }}>{selectedTx.receiverAccount.ownerName}</strong>
+                                                )}
+                                                <span className="monospace">
+                                                    {selectedTx.receiverAccount.accountNumber} ({selectedTx.receiverAccount.type})
+                                                </span>
                                             </span>
                                         </div>
                                     )}

@@ -59,8 +59,8 @@ export default async function TransactionsPage() {
         },
         orderBy: { createdAt: "desc" },
         include: {
-            senderAccount: true,
-            receiverAccount: true,
+            senderAccount: { include: { user: { select: { fullName: true } } } },
+            receiverAccount: { include: { user: { select: { fullName: true } } } },
         },
     });
 
@@ -79,12 +79,14 @@ export default async function TransactionsPage() {
             balance: Number(tx.senderAccount.balance),
             createdAt: tx.senderAccount.createdAt.toISOString(),
             updatedAt: tx.senderAccount.updatedAt.toISOString(),
+            ownerName: tx.senderAccount.user?.fullName ?? null,
         } : null,
         receiverAccount: tx.receiverAccount ? {
             ...tx.receiverAccount,
             balance: Number(tx.receiverAccount.balance),
             createdAt: tx.receiverAccount.createdAt.toISOString(),
             updatedAt: tx.receiverAccount.updatedAt.toISOString(),
+            ownerName: tx.receiverAccount.user?.fullName ?? null,
         } : null,
     }));
 
