@@ -32,8 +32,8 @@ const CONTACT_INFO = [
     {
         id: "address",
         label: "Headquarters",
-        value: "City center, South Hampton, UK",
-        display: "City center, South Hampton, UK",
+        value: "City center, Southampton, UK",
+        display: "City center, Southampton, UK",
         href: "https://maps.app.goo.gl/gwHNtuxDehUg2NS27",
         icon: (
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
