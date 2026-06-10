@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import AdminSettingsClient from "@/components/admin/AdminSettingsClient";
 import "@/styles/admin/settings.scss";
+import "@/styles/admin/transactions.scss";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
 

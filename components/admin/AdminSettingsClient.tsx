@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import {
     Mail, ShieldCheck, Camera,
     BadgeCheck, Clock, Crown, Activity,
-    CalendarDays, KeyRound,
+    CalendarDays, KeyRound, Edit, X, Eye, EyeOff
 } from "lucide-react";
-import { updateAvatarAction, signOutAction } from "@/actions/profile";
+import { updateAvatarAction, signOutAction, updatePasswordAction } from "@/actions/profile";
 
 interface Props {
     userId: string;
@@ -30,6 +30,12 @@ export default function AdminSettingsClient({
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
+
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordForm, setPasswordForm] = useState({ current: "", new: "", confirm: "" });
+    const [passwordError, setPasswordError] = useState("");
+    const [passwordSuccess, setPasswordSuccess] = useState("");
+    const [showPasswords, setShowPasswords] = useState(false);
 
     const handleAvatarClick = () => fileInputRef.current?.click();
 
@@ -63,9 +69,49 @@ export default function AdminSettingsClient({
         }
     };
 
-    const handleSignOut = () => {}; // Sign-out is handled by the sidebar
+    const handlePasswordSubmit = () => {
+        setPasswordError("");
+        setPasswordSuccess("");
+        if (!passwordForm.current || !passwordForm.new || !passwordForm.confirm) {
+            setPasswordError("Please fill out all fields.");
+            return;
+        }
+        if (passwordForm.new !== passwordForm.confirm) {
+            setPasswordError("New passwords do not match.");
+            return;
+        }
+        if (passwordForm.new.length < 8) {
+            setPasswordError("New password must be at least 8 characters.");
+            return;
+        }
+        startTransition(async () => {
+            const res = await updatePasswordAction(userId, passwordForm.current, passwordForm.new);
+            if (res.error) {
+                setPasswordError(res.error);
+            } else {
+                setPasswordSuccess("Password updated successfully.");
+                setPasswordForm({ current: "", new: "", confirm: "" });
+                setTimeout(() => {
+                    setIsPasswordModalOpen(false);
+                    setPasswordSuccess("");
+                }, 2000);
+            }
+        });
+    };
 
-    const fields = [
+    const handleSignOut = () => { }; // Sign-out is handled by the sidebar
+
+    type ProfileField = {
+        icon: React.ReactNode;
+        label: string;
+        value: string;
+        mono?: boolean;
+        badge?: { text: string; cls: string; Icon: React.ElementType };
+        note?: string;
+        action?: React.ReactNode;
+    };
+
+    const fields: ProfileField[] = [
         {
             icon: <Mail size={15} aria-hidden />,
             label: "Email Address",
@@ -96,7 +142,16 @@ export default function AdminSettingsClient({
             label: "Password",
             value: "••••••••••••",
             mono: true,
-            note: "Contact system owner to reset.",
+            action: (
+                <button
+                    className="adminusers__icon-btn edit-btn"
+                    style={{ marginLeft: "10px", verticalAlign: "middle", background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)" }}
+                    onClick={() => setIsPasswordModalOpen(true)}
+                    title="Change Password"
+                >
+                    <Edit size={14} />
+                </button>
+            ),
         },
     ];
 
@@ -175,6 +230,7 @@ export default function AdminSettingsClient({
                                     {field.badge.text}
                                 </span>
                             )}
+                            {field.action}
                             {field.note && (
                                 <span className="profile__field-note">{field.note}</span>
                             )}
@@ -190,6 +246,152 @@ export default function AdminSettingsClient({
                     support@goldenprivatewealth.com
                 </a>.
             </p>
+
+            {/* ── Password Modal ── */}
+            {isPasswordModalOpen && (
+                <div className="tx-modal-backdrop" onClick={() => { setIsPasswordModalOpen(false); setPasswordError(""); setPasswordSuccess(""); setPasswordForm({ current: "", new: "", confirm: "" }); }} role="dialog" aria-modal="true" aria-label="Change Password">
+                    <div className="tx-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+
+                        {/* Header */}
+                        <div className="tx-modal__header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "var(--space-3)" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", color: "var(--color-gold-400)" }}>
+                                    <KeyRound size={16} />
+                                    <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--font-size-xs)", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                                        Security Update
+                                    </span>
+                                </div>
+                                <button className="tx-modal__close" onClick={() => { setIsPasswordModalOpen(false); setPasswordError(""); setPasswordSuccess(""); setPasswordForm({ current: "", new: "", confirm: "" }); }} aria-label="Close modal">
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            {/* Hero style title */}
+                            <div style={{ width: "100%", textAlign: "center", padding: "var(--space-2) 0 var(--space-2)" }}>
+                                <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "var(--space-1)" }}>
+                                    Action Required
+                                </p>
+                                <p style={{
+                                    fontFamily: "var(--font-display)", fontSize: "var(--font-size-2xl)",
+                                    fontWeight: 300, letterSpacing: "-0.02em",
+                                    color: "var(--color-text-primary)",
+                                }}>
+                                    Change Password
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Details list as Form */}
+                        <div className="tx-modal__list-wrap" style={{ padding: "var(--space-4) var(--space-6) var(--space-6)" }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 0, borderTop: "1px solid var(--color-border-subtle)", paddingTop: "var(--space-5)" }}>
+                                
+                                {passwordError && <div style={{ color: "#f87171", fontFamily: "var(--font-body)", fontSize: "var(--font-size-xs)", letterSpacing: "0.05em", textAlign: "center", marginBottom: "var(--space-4)", background: "rgba(248, 113, 113, 0.1)", padding: "var(--space-2)", borderRadius: "var(--radius-md)", border: "1px solid rgba(248, 113, 113, 0.3)" }}>{passwordError}</div>}
+                                {passwordSuccess && <div style={{ color: "#34d399", fontFamily: "var(--font-body)", fontSize: "var(--font-size-xs)", letterSpacing: "0.05em", textAlign: "center", marginBottom: "var(--space-4)", background: "rgba(52, 211, 153, 0.1)", padding: "var(--space-2)", borderRadius: "var(--radius-md)", border: "1px solid rgba(52, 211, 153, 0.3)" }}>{passwordSuccess}</div>}
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
+                                    <label style={{ fontFamily: "var(--font-body)", fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Current Password</label>
+                                    <div style={{ position: "relative" }}>
+                                        <input 
+                                            type={showPasswords ? "text" : "password"} 
+                                            value={passwordForm.current} 
+                                            onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })} 
+                                            placeholder="Enter current password"
+                                            style={{ 
+                                                width: "100%", padding: "var(--space-3) var(--space-4)", paddingRight: "40px",
+                                                background: "rgba(13, 17, 32, 0.6)", border: "1px solid var(--color-border)", 
+                                                borderRadius: "var(--radius-md)", color: "var(--color-text-primary)", 
+                                                fontFamily: "var(--font-mono)", fontSize: "var(--font-size-sm)", outline: "none",
+                                                letterSpacing: "0.1em"
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPasswords(p => !p)}
+                                            aria-label={showPasswords ? "Hide password" : "Show password"}
+                                            style={{
+                                                position: "absolute", right: "var(--space-3)", top: "50%", transform: "translateY(-50%)",
+                                                background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)",
+                                                display: "flex", alignItems: "center", padding: "var(--space-1)"
+                                            }}
+                                        >
+                                            {showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-4)" }}>
+                                    <label style={{ fontFamily: "var(--font-body)", fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>New Password</label>
+                                    <div style={{ position: "relative" }}>
+                                        <input 
+                                            type={showPasswords ? "text" : "password"} 
+                                            value={passwordForm.new} 
+                                            onChange={e => setPasswordForm({ ...passwordForm, new: e.target.value })} 
+                                            placeholder="Min. 8 characters"
+                                            style={{ 
+                                                width: "100%", padding: "var(--space-3) var(--space-4)", paddingRight: "40px",
+                                                background: "rgba(13, 17, 32, 0.6)", border: "1px solid var(--color-border)", 
+                                                borderRadius: "var(--radius-md)", color: "var(--color-text-primary)", 
+                                                fontFamily: "var(--font-mono)", fontSize: "var(--font-size-sm)", outline: "none",
+                                                letterSpacing: "0.1em"
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPasswords(p => !p)}
+                                            aria-label={showPasswords ? "Hide password" : "Show password"}
+                                            style={{
+                                                position: "absolute", right: "var(--space-3)", top: "50%", transform: "translateY(-50%)",
+                                                background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)",
+                                                display: "flex", alignItems: "center", padding: "var(--space-1)"
+                                            }}
+                                        >
+                                            {showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)", marginBottom: "var(--space-6)" }}>
+                                    <label style={{ fontFamily: "var(--font-body)", fontSize: "var(--font-size-xs)", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em" }}>Confirm New Password</label>
+                                    <div style={{ position: "relative" }}>
+                                        <input 
+                                            type={showPasswords ? "text" : "password"} 
+                                            value={passwordForm.confirm} 
+                                            onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })} 
+                                            placeholder="Confirm new password"
+                                            style={{ 
+                                                width: "100%", padding: "var(--space-3) var(--space-4)", paddingRight: "40px",
+                                                background: "rgba(13, 17, 32, 0.6)", border: "1px solid var(--color-border)", 
+                                                borderRadius: "var(--radius-md)", color: "var(--color-text-primary)", 
+                                                fontFamily: "var(--font-mono)", fontSize: "var(--font-size-sm)", outline: "none",
+                                                letterSpacing: "0.1em"
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPasswords(p => !p)}
+                                            aria-label={showPasswords ? "Hide password" : "Show password"}
+                                            style={{
+                                                position: "absolute", right: "var(--space-3)", top: "50%", transform: "translateY(-50%)",
+                                                background: "none", border: "none", cursor: "pointer", color: "var(--color-text-muted)",
+                                                display: "flex", alignItems: "center", padding: "var(--space-1)"
+                                            }}
+                                        >
+                                            {showPasswords ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-3)", borderTop: "1px solid var(--color-border-subtle)", paddingTop: "var(--space-5)" }}>
+                                    <button onClick={() => { setIsPasswordModalOpen(false); setPasswordError(""); setPasswordSuccess(""); setPasswordForm({ current: "", new: "", confirm: "" }); }} style={{ padding: "var(--space-2) var(--space-5)", borderRadius: "var(--radius-full)", background: "transparent", color: "var(--color-text-secondary)", border: "1px solid var(--color-border)", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "var(--font-size-xs)", fontWeight: 500, letterSpacing: "0.05em", textTransform: "uppercase", transition: "all 0.2s" }}>Cancel</button>
+                                    <button onClick={handlePasswordSubmit} disabled={isPending} style={{ padding: "var(--space-2) var(--space-6)", borderRadius: "var(--radius-full)", background: "var(--color-navy-800)", color: "var(--color-gold-300)", border: "1px solid var(--color-gold-700)", cursor: "pointer", fontFamily: "var(--font-body)", fontSize: "var(--font-size-xs)", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", transition: "all 0.2s", boxShadow: "0 0 12px rgba(196, 149, 32, 0.15)" }}>
+                                        {isPending ? "Saving..." : "Save Password"}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );
