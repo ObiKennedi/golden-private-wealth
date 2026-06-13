@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useTransition } from "react"
+import { useRouter } from "next/navigation"
+import { createBacklogTransactionAction, automateBacklogAction } from "@/actions/admin/backlog"
 import {
     Search, X, ChevronDown, Filter, Users,
     ArrowDownLeft, ArrowUpRight, ArrowLeftRight,
@@ -427,6 +429,157 @@ function TxModal({ user, onClose }: { user: User; onClose: () => void }) {
     )
 }
 
+// ── Backlog Modal ──────────────────────────────────────────────────────────
+
+function BacklogModal({ user, onClose }: { user: User; onClose: () => void }) {
+    const router = useRouter()
+    const [isPending, startTransition] = useTransition()
+    const [amount, setAmount] = useState("")
+    const [type, setType] = useState("DEPOSIT")
+    const [direction, setDirection] = useState<"credit" | "debit">("credit")
+    const [description, setDescription] = useState("")
+    const [date, setDate] = useState("")
+
+    const handleSingle = () => {
+        if (!amount || !date) return alert("Amount and Date are required.")
+        startTransition(async () => {
+            const fd = new FormData()
+            fd.append("userId", user.id)
+            fd.append("amount", amount)
+            fd.append("type", type)
+            fd.append("direction", direction)
+            fd.append("description", description)
+            fd.append("date", date)
+            const res = await createBacklogTransactionAction(null, fd)
+            if (res.globalError) alert(res.globalError)
+            else {
+                alert("Transaction added successfully.")
+                router.refresh()
+                onClose()
+            }
+        })
+    }
+
+    const handleAuto = () => {
+        startTransition(async () => {
+            const fd = new FormData()
+            fd.append("userId", user.id)
+            const res = await automateBacklogAction(null, fd)
+            if (res.globalError) alert(res.globalError)
+            else {
+                alert("Automated 15 transactions successfully.")
+                router.refresh()
+                onClose()
+            }
+        })
+    }
+
+    return (
+        <div className="tx-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label={`Backlog for ${user.fullName}`}>
+            <div className="tx-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+                <div className="tx-modal__header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "var(--space-3)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", color: "var(--color-gold-400)" }}>
+                            <FileText size={16} />
+                            <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--font-size-xs)", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                                Transaction Backlog
+                            </span>
+                        </div>
+                        <button className="tx-modal__close" onClick={onClose} aria-label="Close backlog modal">
+                            <X size={16} />
+                        </button>
+                    </div>
+
+                    <div style={{ width: "100%", textAlign: "center", padding: "var(--space-2) 0" }}>
+                        <h2 className="tx-modal__name">{user.fullName}</h2>
+                        <p className="tx-modal__email" style={{ marginTop: 4 }}>Inject Historical Records</p>
+                    </div>
+                </div>
+
+                <div className="tx-modal__list-wrap" style={{ padding: "var(--space-4) var(--space-6) var(--space-6)" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+                        
+                        <div style={{ display: "flex", gap: "var(--space-3)" }}>
+                            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                                <label style={{ fontSize: "var(--font-size-xs)", textTransform: "uppercase", color: "var(--color-text-muted)" }}>Amount</label>
+                                <input 
+                                    type="number" 
+                                    value={amount} 
+                                    onChange={e => setAmount(e.target.value)} 
+                                    placeholder="e.g. 5000"
+                                    style={{ background: "transparent", border: "1px solid var(--color-border-subtle)", color: "white", padding: "var(--space-2)", borderRadius: 4 }}
+                                />
+                            </div>
+                            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                                <label style={{ fontSize: "var(--font-size-xs)", textTransform: "uppercase", color: "var(--color-text-muted)" }}>Date & Time</label>
+                                <input 
+                                    type="datetime-local" 
+                                    value={date} 
+                                    onChange={e => setDate(e.target.value)} 
+                                    style={{ background: "transparent", border: "1px solid var(--color-border-subtle)", color: "white", padding: "var(--space-2)", borderRadius: 4, colorScheme: "dark" }}
+                                />
+                            </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: "var(--space-3)" }}>
+                            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                                <label style={{ fontSize: "var(--font-size-xs)", textTransform: "uppercase", color: "var(--color-text-muted)" }}>Type</label>
+                                <select 
+                                    value={type} 
+                                    onChange={e => setType(e.target.value)}
+                                    style={{ background: "var(--color-bg)", border: "1px solid var(--color-border-subtle)", color: "white", padding: "var(--space-2)", borderRadius: 4 }}
+                                >
+                                    <option value="DEPOSIT">Deposit</option>
+                                    <option value="WITHDRAWAL">Withdrawal</option>
+                                    <option value="TRANSFER">Transfer</option>
+                                </select>
+                            </div>
+                            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                                <label style={{ fontSize: "var(--font-size-xs)", textTransform: "uppercase", color: "var(--color-text-muted)" }}>Direction</label>
+                                <select 
+                                    value={direction} 
+                                    onChange={e => setDirection(e.target.value as "credit"|"debit")}
+                                    style={{ background: "var(--color-bg)", border: "1px solid var(--color-border-subtle)", color: "white", padding: "var(--space-2)", borderRadius: 4 }}
+                                >
+                                    <option value="credit">Credit (+)</option>
+                                    <option value="debit">Debit (-)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
+                            <label style={{ fontSize: "var(--font-size-xs)", textTransform: "uppercase", color: "var(--color-text-muted)" }}>Description / Counterparty</label>
+                            <input 
+                                type="text" 
+                                value={description} 
+                                onChange={e => setDescription(e.target.value)} 
+                                placeholder="e.g. Salary, John Doe"
+                                style={{ background: "transparent", border: "1px solid var(--color-border-subtle)", color: "white", padding: "var(--space-2)", borderRadius: 4 }}
+                            />
+                        </div>
+
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-3)", marginTop: "var(--space-6)", borderTop: "1px solid var(--color-border-subtle)", paddingTop: "var(--space-4)" }}>
+                        <button onClick={onClose} disabled={isPending} style={{ padding: "8px 16px", borderRadius: 4, background: "transparent", border: "1px solid var(--color-border-subtle)", color: "var(--color-text-muted)" }}>
+                            Cancel
+                        </button>
+                        <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                            <button onClick={handleAuto} disabled={isPending} style={{ padding: "8px 16px", borderRadius: 4, background: "var(--color-bg)", color: "white", border: "1px solid var(--color-border-subtle)" }}>
+                                {isPending ? "Working..." : "Automate Now"}
+                            </button>
+                            <button onClick={handleSingle} disabled={isPending} style={{ padding: "8px 16px", borderRadius: 4, background: "var(--color-gold-500)", color: "var(--color-bg)", fontWeight: 600, border: "none" }}>
+                                {isPending ? "Working..." : "Submit"}
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    )
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function AdminTransactionsClient({ users, totalAUM }: Props) {
@@ -435,6 +588,7 @@ export default function AdminTransactionsClient({ users, totalAUM }: Props) {
     const [sortBy, setSortBy] = useState<"txCount" | "name" | "joined">("txCount")
     const [showSort, setShowSort] = useState(false)
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
+    const [selectedBacklogUser, setSelectedBacklogUser] = useState<User | null>(null)
 
     const enriched = useMemo(() => users.map(u => {
         const txCount = u.accounts.reduce(
@@ -553,7 +707,7 @@ export default function AdminTransactionsClient({ users, totalAUM }: Props) {
                     <p className="admintx__count">{filtered.length} of {users.length} clients</p>
                     <div className="admintx__grid">
                         {filtered.map(user => (
-                            <button
+                            <div
                                 key={user.id}
                                 className="admintx__user-card"
                                 onClick={() => setSelectedUser(user)}
@@ -584,8 +738,23 @@ export default function AdminTransactionsClient({ users, totalAUM }: Props) {
                                         </span>
                                     ))}
                                 </div>
-                                <span className="admintx__card-cta">View Transactions →</span>
-                            </button>
+                                <div style={{ display: "flex", gap: "var(--space-2)", marginTop: "var(--space-4)" }}>
+                                    <button 
+                                        className="admintx__card-cta" 
+                                        style={{ flex: 1, justifyContent: "center" }}
+                                        onClick={(e) => { e.stopPropagation(); setSelectedUser(user); }}
+                                    >
+                                        View Transactions →
+                                    </button>
+                                    <button 
+                                        className="admintx__card-cta" 
+                                        style={{ flex: 1, justifyContent: "center", background: "var(--color-surface-elevated)", color: "var(--color-gold-400)" }}
+                                        onClick={(e) => { e.stopPropagation(); setSelectedBacklogUser(user); }}
+                                    >
+                                        Backlog
+                                    </button>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 </>
@@ -594,6 +763,11 @@ export default function AdminTransactionsClient({ users, totalAUM }: Props) {
             {/* ── Transaction Modal ── */}
             {selectedUser && (
                 <TxModal user={selectedUser} onClose={() => setSelectedUser(null)} />
+            )}
+
+            {/* ── Backlog Modal ── */}
+            {selectedBacklogUser && (
+                <BacklogModal user={selectedBacklogUser} onClose={() => setSelectedBacklogUser(null)} />
             )}
         </div>
     )
