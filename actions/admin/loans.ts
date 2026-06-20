@@ -28,7 +28,7 @@ const ApproveSchema = z.object({
     loanId: z.string().min(1),
     checkingAccountId: z.string().min(1),
     amount: z.coerce.number().positive(),
-    currency: z.string().default("USD"),
+    currency: z.string().default("GBP"),
     interestRate: z.coerce
         .number({ message: "Enter a valid interest rate." })
         .min(0, "Rate cannot be negative.")

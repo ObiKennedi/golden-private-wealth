@@ -88,7 +88,7 @@ export async function lockSavingsAction(prevState: any, formData: FormData) {
                     type: "TRANSFER",
                     status: "COMPLETED",
                     amount,
-                    currency: "USD",
+                    currency: "GBP",
                     description: `Savings lock — funds moved to vault (${lockDays}-day lock)`,
                     senderAccountId: checkingAccountId,
                     receiverAccountId: savingsAccountId,

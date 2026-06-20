@@ -24,11 +24,11 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function fmt(val: { toFixed: (n: number) => string } | number, currency = "USD") {
+function fmt(val: { toFixed: (n: number) => string } | number, currency = "GBP") {
     const n = typeof val === "number" ? val : Number(val);
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-GB", {
         style: "currency",
-        currency,
+        currency: currency === "USD" ? "GBP" : currency,
         minimumFractionDigits: 2,
     }).format(n);
 }
@@ -141,7 +141,7 @@ export default async function UserHomePage() {
                 checking={checking ? { balance: Number(checking.balance), currency: checking.currency, accountNumber: checking.accountNumber } : undefined}
                 savings={savings ? { balance: Number(savings.balance), currency: savings.currency } : undefined}
                 invest={invest ? { balance: Number(invest.balance), currency: invest.currency } : undefined}
-                credit={{ balance: totalLoanExposure, currency: "USD" }}
+                credit={{ balance: totalLoanExposure, currency: "GBP" }}
             />
 
             {/* ── Actions ── */}

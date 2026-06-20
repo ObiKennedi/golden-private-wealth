@@ -20,16 +20,16 @@ import "@/styles/admin/overview.scss";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
 
-function fmt(val: number, currency = "USD") {
-    return new Intl.NumberFormat("en-US", {
+function fmt(val: number, currency = "GBP") {
+    return new Intl.NumberFormat("en-GB", {
         style: "currency",
-        currency,
+        currency: currency === "USD" ? "GBP" : currency,
         minimumFractionDigits: 2,
     }).format(val);
 }
 
 function fmtTime(date: Date) {
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-GB", {
         month: "short",
         day: "numeric",
         hour: "numeric",

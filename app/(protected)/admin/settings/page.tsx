@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import AdminSettingsClient from "@/components/admin/AdminSettingsClient";
 import "@/styles/admin/settings.scss";
+import "@/styles/admin/transactions.scss";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
 
@@ -29,7 +30,7 @@ export default async function AdminSettingsPage() {
         ? `${nameParts[0][0]}${nameParts[nameParts.length - 1][0]}`.toUpperCase()
         : admin.fullName.slice(0, 2).toUpperCase();
 
-    const memberSince = new Intl.DateTimeFormat("en-US", {
+    const memberSince = new Intl.DateTimeFormat("en-GB", {
         month: "long",
         year: "numeric",
     }).format(admin.createdAt);

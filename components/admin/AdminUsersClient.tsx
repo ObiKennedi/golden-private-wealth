@@ -75,7 +75,7 @@ const BALANCE_PRESETS: BalancePreset[] = [
 
 function fmt(n: number, currency = "GBP") {
     return new Intl.NumberFormat("en-GB", {
-        style: "currency", currency, minimumFractionDigits: 2
+        style: "currency", currency: currency === "USD" ? "GBP" : currency, minimumFractionDigits: 2
     }).format(n)
 }
 
@@ -333,6 +333,9 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                         {user.fullName} {user.status === "SUSPENDED" && "(Suspended)"}
                                                     </span>
                                                     <span className="adminusers__client-email">{user.email}</span>
+                                                    <span className="adminusers__mono adminusers__mono--sm" style={{ color: "var(--color-gold-600)", letterSpacing: "0.06em" }}>
+                                                        {user.accountNumber}
+                                                    </span>
                                                 </div>
                                                 <span
                                                     className={`adminusers__verified-dot${user.emailVerified ? " adminusers__verified-dot--yes" : ""}`}

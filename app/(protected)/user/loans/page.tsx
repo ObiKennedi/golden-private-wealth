@@ -18,10 +18,10 @@ import "@/styles/user/loans.scss"
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret")
 
-function fmt(val: number | { toFixed: (n: number) => string }, currency = "GDP") {
+function fmt(val: number | { toFixed: (n: number) => string }, currency = "GBP") {
     return new Intl.NumberFormat("en-UK", {
         style: "currency",
-        currency,
+        currency: currency === "USD" ? "GBP" : currency,
         minimumFractionDigits: 2,
     }).format(Number(val))
 }

@@ -19,17 +19,17 @@ import "@/styles/admin/loans.scss";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
 
-function fmt(val: { toFixed: (n: number) => string } | number, currency = "USD") {
+function fmt(val: { toFixed: (n: number) => string } | number, currency = "GBP") {
     const n = typeof val === "number" ? val : Number(val);
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-GB", {
         style: "currency",
-        currency,
+        currency: currency === "USD" ? "GBP" : currency,
         minimumFractionDigits: 2,
     }).format(n);
 }
 
 function fmtDate(date: Date) {
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-GB", {
         month: "short",
         day: "numeric",
         year: "numeric",
@@ -84,7 +84,7 @@ export default async function AdminTransfersPage() {
         ? await prisma.savingsLock.findMany({
             where: { id: { in: savingsLockIds } },
             include: { user: { select: { fullName: true, email: true } } },
-          })
+            })
         : [];
 
     const lockMap = new Map(savingsLocks.map(l => [l.id, l]));

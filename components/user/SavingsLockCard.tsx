@@ -17,10 +17,10 @@ import {
 } from "lucide-react";
 import { requestSavingsWithdrawalAction } from "@/actions/savings";
 
-function fmt(val: number, currency = "GDP") {
+function fmt(val: number, currency = "GBP") {
     return new Intl.NumberFormat("en-UK", {
         style: "currency",
-        currency,
+        currency: currency === "USD" ? "GBP" : currency,
         minimumFractionDigits: 2,
     }).format(val);
 }

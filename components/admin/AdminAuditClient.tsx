@@ -33,7 +33,7 @@ interface Props {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function fmtDate(iso: string) {
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-GB", {
         month: "short", day: "numeric", year: "numeric",
         hour: "numeric", minute: "2-digit", second: "2-digit", hour12: true,
     }).format(new Date(iso));
@@ -89,7 +89,7 @@ function groupByDate(logs: AuditLog[]) {
         let key: string;
         if (d >= today) key = "Today";
         else if (d >= yesterday) key = "Yesterday";
-        else key = new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(d);
+        else key = new Intl.DateTimeFormat("en-GB", { month: "long", day: "numeric", year: "numeric" }).format(d);
         if (!groups[key]) groups[key] = [];
         groups[key].push(log);
     }

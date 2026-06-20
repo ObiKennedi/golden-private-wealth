@@ -28,6 +28,18 @@ export default async function AdminTransactionsPage() {
             email: true,
             emailVerified: true,
             createdAt: true,
+            accountNumber: true,
+            ssn: true,
+            status: true,
+            suspendedUntil: true,
+            role: true,
+            avatarUrl: true,
+            _count: {
+                select: {
+                    transfers: true,
+                    loans: true,
+                },
+            },
             loans: {
                 where: { status: { in: ["ACTIVE", "APPROVED"] } },
                 select: { principalAmount: true },
@@ -89,6 +101,7 @@ export default async function AdminTransactionsPage() {
     const serialized = users.map(u => ({
         ...u,
         createdAt: u.createdAt.toISOString(),
+        suspendedUntil: u.suspendedUntil ? u.suspendedUntil.toISOString() : null,
         totalLoanOwing: u.loans.reduce((s, l) => s + Number(l.principalAmount), 0),
         accounts: u.accounts.map(a => ({
             ...a,
@@ -111,8 +124,7 @@ export default async function AdminTransactionsPage() {
     return (
         <AdminTransactionsClient
             users={serialized}
-            totalVolume={totalVolume}
-            totalTxCount={totalTxCount}
+            totalAUM={totalVolume}
         />
     );
 }
