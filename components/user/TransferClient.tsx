@@ -66,6 +66,8 @@ const BANKS = [
     { group: "Global Fintech", value: "PAYONEER", label: "Payoneer" },
     { group: "Global Fintech", value: "AIRWALLEX", label: "Airwallex" },
     { group: "Global Fintech", value: "STRIPE", label: "Stripe Treasury" },
+    // ── Other ──
+    { group: "Can't find your bank?", value: "OTHER", label: "Other — enter manually" },
 ]
 
 const CURRENCIES = [
@@ -101,6 +103,7 @@ interface Transfer {
     id: string
     recipientName: string
     recipientBank: string
+    bankOther?: string
     amount: number
     currency: string
     status: string
@@ -123,6 +126,7 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
         recipientName: "",
         recipientAccountNumber: "",
         recipientBank: "",
+        bankOther: "",
         amount: "",
         currency: "GBP",
         note: "",
@@ -139,6 +143,7 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     const isInternal = fields.recipientBank === "GOLDEN_PRIVATE_WEALTH"
+    const isOther = fields.recipientBank === "OTHER"
 
     useEffect(() => {
         if (!isInternal) { setAcctVerify({ status: "idle", message: "" }); return }
@@ -167,6 +172,10 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
         const { name, value } = e.target
         setFields(p => ({ ...p, [name]: value }))
         if (errors[name as keyof typeof fields]) setErrors(p => ({ ...p, [name]: undefined }))
+        // Clear bankOther when switching away from OTHER
+        if (name === "recipientBank" && value !== "OTHER") {
+            setFields(p => ({ ...p, recipientBank: value, bankOther: "" }))
+        }
     }
 
     const validate = () => {
@@ -176,6 +185,7 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
         if (!fields.recipientName.trim()) e.recipientName = "Recipient name is required."
         if (!fields.recipientAccountNumber.trim()) e.recipientAccountNumber = e.recipientAccountNumber || "Account number is required."
         if (!fields.recipientBank) e.recipientBank = "Please select a destination bank."
+        if (isOther && !fields.bankOther.trim()) e.bankOther = "Please enter your bank name."
         const amt = parseFloat(fields.amount)
         if (!fields.amount || isNaN(amt)) e.amount = "Enter a valid amount."
         else if (amt < 1) e.amount = "Minimum transfer is £1.00."
@@ -196,13 +206,18 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
             fd.append("userId", userId)
             const result = await submitTransferAction(null, fd)
             if (result?.globalError) { setGlobalError(result.globalError); return }
+
+            const bankLabel = isOther
+                ? fields.bankOther
+                : BANKS.find(b => b.value === fields.recipientBank)?.label ?? fields.recipientBank
+
             setModalData({
                 isVisible: true,
                 isInternal: result?.isInternal || false,
                 reference: result?.reference || "N/A",
                 amount: fields.amount,
                 recipientName: fields.recipientName,
-                bank: BANKS.find(b => b.value === fields.recipientBank)?.label || fields.recipientBank,
+                bank: bankLabel,
             })
         })
     }
@@ -210,7 +225,7 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
     const closeModal = () => {
         setModalData(null)
         setAcctVerify({ status: "idle", message: "" })
-        setFields({ recipientName: "", recipientAccountNumber: "", recipientBank: "", amount: "", currency: "GBP", note: "" })
+        setFields({ recipientName: "", recipientAccountNumber: "", recipientBank: "", bankOther: "", amount: "", currency: "GBP", note: "" })
         router.refresh()
     }
 
@@ -306,6 +321,22 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                                 <span className="transfer__select-icon" aria-hidden><ChevronDown size={14} /></span>
                             </div>
                             {errors.recipientBank && <span className="transfer__field-error">{errors.recipientBank}</span>}
+
+                            {isOther && (
+                                <div className="transfer__field" style={{ marginTop: 10 }}>
+                                    <label htmlFor="bankOther">Bank name</label>
+                                    <input
+                                        id="bankOther" name="bankOther" type="text"
+                                        placeholder="e.g. First National Bank of Lagos"
+                                        value={fields.bankOther} onChange={handleChange}
+                                        disabled={isPending} aria-invalid={!!errors.bankOther}
+                                    />
+                                    <p style={{ fontSize: 11, color: "var(--color-text-tertiary)", marginTop: 4, lineHeight: 1.5 }}>
+                                        Enter the full name of your bank or financial institution.
+                                    </p>
+                                    {errors.bankOther && <span className="transfer__field-error">{errors.bankOther}</span>}
+                                </div>
+                            )}
                         </div>
                     </fieldset>
 
@@ -400,7 +431,9 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                             {recentTransfers.map(t => {
                                 const meta = STATUS_META[t.status] ?? STATUS_META.PENDING
                                 const Icon = meta.Icon
-                                const bankLabel = BANKS.find(b => b.value === t.recipientBank)?.label ?? t.recipientBank
+                                const bankLabel = t.recipientBank === "OTHER"
+                                    ? (t.bankOther ?? "Other")
+                                    : BANKS.find(b => b.value === t.recipientBank)?.label ?? t.recipientBank
                                 return (
                                     <li key={t.id} className="transfer__history-item">
                                         <div className="transfer__history-icon" aria-hidden>
