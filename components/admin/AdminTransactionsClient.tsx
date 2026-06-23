@@ -130,7 +130,7 @@ function ReceiptModal({ tx, ownerName, onClose }: { tx: Tx; ownerName: string; o
 
     return (
         <div className="tx-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label="Transaction Receipt">
-            <div className="tx-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <div className="tx-mbacklogodal" onClick={e => e.stopPropagation()} style={{ maxWidth: 480 }}>
 
                 {/* Header */}
                 <div className="tx-modal__header" style={{ flexDirection: "column", alignItems: "flex-start", gap: "var(--space-3)" }}>

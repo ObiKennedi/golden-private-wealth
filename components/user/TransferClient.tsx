@@ -327,7 +327,7 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                                     <label htmlFor="bankOther">Bank name</label>
                                     <input
                                         id="bankOther" name="bankOther" type="text"
-                                        placeholder="e.g. First National Bank of Lagos"
+                                        placeholder="e.g. Bank Of America"
                                         value={fields.bankOther} onChange={handleChange}
                                         disabled={isPending} aria-invalid={!!errors.bankOther}
                                     />
