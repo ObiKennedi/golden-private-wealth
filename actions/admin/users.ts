@@ -65,19 +65,25 @@ export async function unsuspendUserAction(userId: string) {
     }
 }
 
-export async function updateUserAction(userId: string, data: { fullName: string, email: string, ssn: string, avatarUrl: string }) {
+export async function updateUserAction(userId: string, data: { fullName: string, email: string, ssn: string, avatarUrl: string, joinedAt?: string }) {
     if (!(await verifyAdmin())) return { error: "Unauthorized" }
 
     try {
-        await prisma.user.update({
-            where: { id: userId },
-            data: {
-                fullName: data.fullName,
-                email: data.email,
-                ssn: data.ssn,
-                avatarUrl: data.avatarUrl || null,
+        const updateData: Record<string, unknown> = {
+            fullName: data.fullName,
+            email: data.email,
+            ssn: data.ssn,
+            avatarUrl: data.avatarUrl || null,
+        }
+
+        if (data.joinedAt) {
+            const parsed = new Date(data.joinedAt)
+            if (!isNaN(parsed.getTime())) {
+                updateData.createdAt = parsed
             }
-        })
+        }
+
+        await prisma.user.update({ where: { id: userId }, data: updateData })
         return { success: true }
     } catch (err: any) {
         console.error("[updateUserAction]", err)

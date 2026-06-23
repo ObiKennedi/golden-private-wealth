@@ -108,7 +108,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
     const [errors, setErrors] = useState<Record<string, string>>({})
 
     const [editUser, setEditUser] = useState<User | null>(null)
-    const [editForm, setEditForm] = useState({ fullName: "", email: "", ssn: "", avatarUrl: "" })
+    const [editForm, setEditForm] = useState({ fullName: "", email: "", ssn: "", avatarUrl: "", joinedAt: "" })
     const [editError, setEditError] = useState("")
 
     const [suspendUser, setSuspendUser] = useState<User | null>(null)
@@ -202,7 +202,16 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
         startTransition(async () => {
             const result = await updateUserAction(editUser.id, editForm)
             if (result.error) { setEditError(result.error) }
-            else { setUsers(users.map(u => u.id === editUser.id ? { ...u, ...editForm } : u)); setEditUser(null); router.refresh() }
+            else {
+                setUsers(users.map(u => {
+                    if (u.id !== editUser.id) return u
+                    const updated = { ...u, ...editForm }
+                    if (editForm.joinedAt) updated.createdAt = new Date(editForm.joinedAt).toISOString()
+                    return updated
+                }))
+                setEditUser(null)
+                router.refresh()
+            }
         })
     }
 
@@ -396,7 +405,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                         Adjust <ChevronDown size={12} aria-hidden />
                                                     </button>
                                                 )}
-                                                <button className="adminusers__icon-btn edit-btn" onClick={() => { setEditUser(user); setEditForm({ fullName: user.fullName, email: user.email, ssn: user.ssn || "", avatarUrl: user.avatarUrl || "" }) }} title="Edit User">
+                                                <button className="adminusers__icon-btn edit-btn" onClick={() => { setEditUser(user); setEditForm({ fullName: user.fullName, email: user.email, ssn: user.ssn || "", avatarUrl: user.avatarUrl || "", joinedAt: user.createdAt ? new Date(user.createdAt).toISOString().split("T")[0] : "" }) }} title="Edit User">
                                                     <Edit size={14} />
                                                 </button>
                                                 <button className="adminusers__icon-btn suspend-btn" onClick={() => setSuspendUser(user)} title="Suspend User">
@@ -507,6 +516,7 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                             <div className="admin-modal-field"><label>Email</label><input value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} /></div>
                             <div className="admin-modal-field"><label>National Insurance / Tax ID</label><input value={editForm.ssn} onChange={e => setEditForm({ ...editForm, ssn: e.target.value })} /></div>
                             <div className="admin-modal-field"><label>Avatar URL</label><input value={editForm.avatarUrl} onChange={e => setEditForm({ ...editForm, avatarUrl: e.target.value })} /></div>
+                            <div className="admin-modal-field"><label>Member Since (Join Date)</label><input type="date" value={editForm.joinedAt} onChange={e => setEditForm({ ...editForm, joinedAt: e.target.value })} /></div>
                         </div>
                         <div className="admin-modal-footer">
                             <button onClick={() => setEditUser(null)} className="admin-modal-btn">Cancel</button>
