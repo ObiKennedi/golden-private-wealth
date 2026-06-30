@@ -550,16 +550,6 @@ export default function TransferClient({ userId, accountNumber, fullName, userSt
                             <p className="transfer__modal-status" style={{ color: "#fdf6e3", fontSize: "1.05rem", marginBottom: 8 }}>
                                 We cannot process this transaction at this time.
                             </p>
-                            <p style={{
-                                fontSize: "0.8rem",
-                                color: "rgba(216,220,232,0.55)",
-                                lineHeight: 1.7,
-                                textAlign: "center",
-                                margin: "0 0 24px"
-                            }}>
-                                Your account has been temporarily restricted from making outgoing transfers
-                                by our compliance team. A notification has been sent to your registered email address.
-                            </p>
                             <div style={{
                                 background: "rgba(196,149,32,0.06)",
                                 border: "1px solid rgba(196,149,32,0.2)",
