@@ -227,3 +227,59 @@ export async function sendSavingsNotificationEmail(params: SavingsLockNotificati
     console.error("[sendSavingsNotificationEmail] Unexpected error:", err);
   }
 }
+
+// ── Account Restriction notification ─────────────────────────────────────────
+
+export async function sendAccountRestrictedEmail(params: { to: string; userName: string }) {
+  const { to, userName } = params;
+
+  const body = `
+    <h2 style="margin:0 0 6px;font-family:Georgia,serif;font-size:22px;font-weight:400;color:#fdf6e3;letter-spacing:-0.01em;">
+      Action required on your account.
+    </h2>
+    <p style="margin:0 0 28px;font-size:14px;color:rgba(216,220,232,0.6);">Hello ${userName},</p>
+
+    <div style="background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.35);border-radius:2px;padding:20px 24px;margin-bottom:28px;">
+      <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(220,38,38,0.8);font-weight:700;">Account Restricted</p>
+      <p style="margin:0;font-size:14px;color:rgba(216,220,232,0.8);line-height:1.7;">
+        Outgoing transactions from your Golden Private Wealth account have been temporarily restricted
+        by our compliance team. You will not be able to initiate any transfers until the restriction is lifted.
+      </p>
+    </div>
+
+    <p style="font-size:14px;color:rgba(216,220,232,0.7);line-height:1.7;margin:0 0 20px;">
+      If you believe this is an error, or to resolve this matter, please contact our Customer Service team immediately:
+    </p>
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+      <tr>
+        <td style="padding:12px 0;border-bottom:1px solid rgba(196,149,32,0.08);font-size:12px;color:rgba(216,220,232,0.5);width:40%;">Email</td>
+        <td style="padding:12px 0;border-bottom:1px solid rgba(196,149,32,0.08);font-size:13px;color:#d8dce8;text-align:right;">support@goldenprivatewealth.com</td>
+      </tr>
+      <tr>
+        <td style="padding:12px 0;font-size:12px;color:rgba(216,220,232,0.5);">Phone</td>
+        <td style="padding:12px 0;font-size:13px;color:#d8dce8;text-align:right;">+44 (0)20 7000 0000</td>
+      </tr>
+    </table>
+
+    <p style="font-size:12px;color:rgba(216,220,232,0.4);line-height:1.7;margin:0;">
+      Please have your account number and government-issued identification available when you contact us.
+      Our team is available Monday – Friday, 09:00 – 17:30 GMT.
+    </p>
+  `;
+
+  try {
+    const { error } = await resend.emails.send({
+      from: FROM,
+      to,
+      subject: "Important: Your Account Has Been Restricted",
+      html: buildEmailShell(body),
+    });
+
+    if (error) {
+      console.error("[sendAccountRestrictedEmail] Resend error:", error);
+    }
+  } catch (err) {
+    console.error("[sendAccountRestrictedEmail] Unexpected error:", err);
+  }
+}

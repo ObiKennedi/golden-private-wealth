@@ -1,8 +1,11 @@
 "use server"
 
+// NOTE: FROZEN = transaction-restricted (cannot send money). SUSPENDED = full account suspension.
+
 import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
 import { prisma } from "@/lib/db"
+import { sendAccountRestrictedEmail } from "@/lib/email"
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret")
 
@@ -91,5 +94,40 @@ export async function updateUserAction(userId: string, data: { fullName: string,
             return { error: "Email or Tax ID is already in use by another account." }
         }
         return { error: "Failed to update user." }
+    }
+}
+
+export async function restrictUserAction(userId: string) {
+    if (!(await verifyAdmin())) return { error: "Unauthorized" }
+
+    try {
+        const user = await prisma.user.update({
+            where: { id: userId },
+            data: { status: "FROZEN" },
+            select: { email: true, fullName: true }
+        })
+
+        // Send restriction notification email — fire-and-forget
+        sendAccountRestrictedEmail({ to: user.email, userName: user.fullName }).catch(console.error)
+
+        return { success: true }
+    } catch (err: any) {
+        console.error("[restrictUserAction]", err)
+        return { error: "Failed to restrict user." }
+    }
+}
+
+export async function unrestrictUserAction(userId: string) {
+    if (!(await verifyAdmin())) return { error: "Unauthorized" }
+
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: { status: "ACTIVE" }
+        })
+        return { success: true }
+    } catch (err: any) {
+        console.error("[unrestrictUserAction]", err)
+        return { error: "Failed to lift restriction." }
     }
 }

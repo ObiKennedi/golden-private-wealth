@@ -36,6 +36,7 @@ export default async function TransferPage() {
                 userId={user.id}
                 accountNumber={user.accountNumber}
                 fullName={user.fullName}
+                userStatus={user.status}
                 recentTransfers={recentTransfers.map((t) => ({
                     id: t.id,
                     recipientName: t.recipientName,

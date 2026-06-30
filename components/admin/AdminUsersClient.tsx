@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation"
 import {
     Search, ChevronDown, ChevronUp, BadgeCheck,
     Users, PoundSterling, TrendingUp, X, Wallet,
-    Edit, ShieldAlert, Trash2, AlertCircle
+    Edit, ShieldAlert, Trash2, AlertCircle, Lock, LockOpen
 } from "lucide-react"
 import { updateAccountBalanceAction } from "@/actions/admin"
-import { updateUserAction, suspendUserAction, unsuspendUserAction, deleteUserAction } from "@/actions/admin/users"
+import { updateUserAction, suspendUserAction, unsuspendUserAction, deleteUserAction, restrictUserAction, unrestrictUserAction } from "@/actions/admin/users"
 
 type AccountType = "CHECKING" | "SAVINGS" | "INVESTMENT" | "CREDIT"
 type BalancePreset =
@@ -117,6 +117,9 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
 
     const [deleteUser, setDeleteUser] = useState<User | null>(null)
     const [deleteError, setDeleteError] = useState("")
+
+    const [restrictUser, setRestrictUser] = useState<User | null>(null)
+    const [restrictError, setRestrictError] = useState("")
 
     const verifiedCount = useMemo(() => users.filter((u) => u.emailVerified).length, [users])
 
@@ -247,6 +250,23 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
         })
     }
 
+    const handleRestrictSubmit = () => {
+        if (!restrictUser) return
+        setRestrictError("")
+        const isCurrentlyFrozen = restrictUser.status === "FROZEN"
+        startTransition(async () => {
+            const result = isCurrentlyFrozen
+                ? await unrestrictUserAction(restrictUser.id)
+                : await restrictUserAction(restrictUser.id)
+            if (result.error) { setRestrictError(result.error) }
+            else {
+                setUsers(users.map(u => u.id === restrictUser.id ? { ...u, status: isCurrentlyFrozen ? "ACTIVE" : "FROZEN" } : u))
+                setRestrictUser(null)
+                router.refresh()
+            }
+        })
+    }
+
     return (
         <div className="adminusers__inner">
 
@@ -338,8 +358,10 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                         : <span>{initials(user.fullName)}</span>}
                                                 </div>
                                                 <div className="adminusers__client-info">
-                                                    <span className="adminusers__client-name" style={user.status === "SUSPENDED" ? { color: "#ef4444" } : {}}>
-                                                        {user.fullName} {user.status === "SUSPENDED" && "(Suspended)"}
+                                                    <span className="adminusers__client-name" style={user.status === "SUSPENDED" ? { color: "#ef4444" } : user.status === "FROZEN" ? { color: "#f97316" } : {}}>
+                                                        {user.fullName}
+                                                        {user.status === "SUSPENDED" && " (Suspended)"}
+                                                        {user.status === "FROZEN" && " (Restricted)"}
                                                     </span>
                                                     <span className="adminusers__client-email">{user.email}</span>
                                                     <span className="adminusers__mono adminusers__mono--sm" style={{ color: "var(--color-gold-600)", letterSpacing: "0.06em" }}>
@@ -410,6 +432,14 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                                                 </button>
                                                 <button className="adminusers__icon-btn suspend-btn" onClick={() => setSuspendUser(user)} title="Suspend User">
                                                     <ShieldAlert size={14} color={user.status === "SUSPENDED" ? "#f59e0b" : "currentColor"} />
+                                                </button>
+                                                <button
+                                                    className="adminusers__icon-btn restrict-btn"
+                                                    style={{ color: user.status === "FROZEN" ? "#f97316" : "inherit" }}
+                                                    onClick={() => setRestrictUser(user)}
+                                                    title={user.status === "FROZEN" ? "Lift Restriction" : "Restrict Transactions"}
+                                                >
+                                                    {user.status === "FROZEN" ? <LockOpen size={14} color="#f97316" /> : <Lock size={14} />}
                                                 </button>
                                                 <button className="adminusers__icon-btn delete-btn" onClick={() => setDeleteUser(user)} title="Delete User">
                                                     <Trash2 size={14} color="#ef4444" />
@@ -584,6 +614,54 @@ export default function AdminUsersClient({ users: initialUsers, totalAUM }: Prop
                         <div className="admin-modal-footer">
                             <button onClick={() => setDeleteUser(null)} className="admin-modal-btn">Cancel</button>
                             <button onClick={handleDeleteSubmit} className="admin-modal-btn admin-modal-btn--danger" disabled={isPending}>Delete User</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Restrict Modal ── */}
+            {restrictUser && (
+                <div className="admin-modal-overlay">
+                    <div className={`admin-modal ${restrictUser.status === "FROZEN" ? "admin-modal--warning" : "admin-modal--danger"}`}>
+                        <div className="admin-modal-header">
+                            <h2>{restrictUser.status === "FROZEN" ? "Lift Transaction Restriction" : "Restrict Transactions"}</h2>
+                            <button onClick={() => setRestrictUser(null)} className="admin-modal-close" aria-label="Close modal"><X size={16} /></button>
+                        </div>
+                        <div className="admin-modal-body" style={{ gap: "var(--space-3)" }}>
+                            {restrictError && <div className="adminusers__error">{restrictError}</div>}
+                            {restrictUser.status === "FROZEN" ? (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", textAlign: "left" }}>
+                                    <div style={{ display: "flex", gap: "12px", alignItems: "center", color: "#f97316" }}>
+                                        <LockOpen size={22} />
+                                        <strong style={{ fontSize: "var(--font-size-md)" }}>Remove Restriction</strong>
+                                    </div>
+                                    <p style={{ lineHeight: 1.6, fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", margin: 0 }}>
+                                        <strong>{restrictUser.fullName}</strong> is currently restricted from making transactions.
+                                        Lifting this restriction will restore full transaction access immediately.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", textAlign: "left" }}>
+                                    <div style={{ display: "flex", gap: "12px", alignItems: "center", color: "#f97316" }}>
+                                        <Lock size={22} />
+                                        <strong style={{ fontSize: "var(--font-size-md)" }}>Restrict Outgoing Transactions</strong>
+                                    </div>
+                                    <p style={{ lineHeight: 1.6, fontSize: "var(--font-size-sm)", color: "var(--color-text-secondary)", margin: 0 }}>
+                                        This will immediately prevent <strong>{restrictUser.fullName}</strong> from initiating
+                                        any outgoing transfers. A notification email will be sent to the user.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="admin-modal-footer">
+                            <button onClick={() => setRestrictUser(null)} className="admin-modal-btn">Cancel</button>
+                            <button
+                                onClick={handleRestrictSubmit}
+                                className={`admin-modal-btn ${restrictUser.status === "FROZEN" ? "admin-modal-btn--warning" : "admin-modal-btn--danger"}`}
+                                disabled={isPending}
+                            >
+                                {restrictUser.status === "FROZEN" ? "Lift Restriction" : "Restrict Account"}
+                            </button>
                         </div>
                     </div>
                 </div>

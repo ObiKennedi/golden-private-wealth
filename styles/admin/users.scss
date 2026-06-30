@@ -1120,6 +1120,13 @@
         background: rgba(239, 68, 68, 0.08) !important;
         box-shadow: 0 0 10px rgba(239, 68, 68, 0.15) !important;
     }
+
+    &.restrict-btn:hover {
+        color: #f97316 !important;
+        border-color: rgba(249, 115, 22, 0.4) !important;
+        background: rgba(249, 115, 22, 0.08) !important;
+        box-shadow: 0 0 10px rgba(249, 115, 22, 0.15) !important;
+    }
 }
 
 // ── Admin Custom Modals ────────────────────────────────────────────────

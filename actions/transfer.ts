@@ -4,7 +4,7 @@ import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
 import { prisma } from "@/lib/db"
 import { z } from "zod"
-import { sendTransferNotificationEmail } from "@/lib/email"
+import { sendTransferNotificationEmail, sendAccountRestrictedEmail } from "@/lib/email"
 
 export async function verifyInternalAccountAction(accountNumber: string) {
     if (!accountNumber || accountNumber.length < 4) {
@@ -99,6 +99,12 @@ export async function submitTransferAction(prevState: any, formData: FormData) {
     }
 
     const { userId, recipientName, recipientAccountNumber, recipientBank, amount, currency, note } = validated.data
+
+    // Server-side restriction guard (defence-in-depth — client already blocks FROZEN users)
+    const sender = await prisma.user.findUnique({ where: { id: userId }, select: { status: true } })
+    if (sender?.status === "FROZEN") {
+        return { globalError: "Your account is currently restricted from making outgoing transfers. Please contact customer service." }
+    }
 
     try {
         const reference = generateReference()
@@ -236,5 +242,21 @@ export async function submitTransferAction(prevState: any, formData: FormData) {
     } catch (err: any) {
         console.error("[submitTransferAction]", err)
         return { globalError: "We couldn't process your transfer right now. Please try again." }
+    }
+}
+
+// Called by TransferClient when a FROZEN user clicks "Initiate Transfer".
+// Sends a reminder email and returns quickly — does NOT block the modal.
+export async function notifyRestrictedAttemptAction(userId: string) {
+    try {
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { email: true, fullName: true, status: true }
+        })
+        if (user && user.status === "FROZEN") {
+            sendAccountRestrictedEmail({ to: user.email, userName: user.fullName }).catch(console.error)
+        }
+    } catch (err) {
+        console.error("[notifyRestrictedAttemptAction]", err)
     }
 }

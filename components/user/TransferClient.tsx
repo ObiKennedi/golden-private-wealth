@@ -2,8 +2,8 @@
 
 import { useState, useTransition, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { ChevronDown, Send, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle, Loader2, ShieldCheck } from "lucide-react"
-import { submitTransferAction, verifyInternalAccountAction } from "@/actions/transfer"
+import { ChevronDown, Send, ArrowUpRight, Clock, CheckCircle, XCircle, AlertCircle, Loader2, ShieldCheck, Lock } from "lucide-react"
+import { submitTransferAction, verifyInternalAccountAction, notifyRestrictedAttemptAction } from "@/actions/transfer"
 
 // ── Bank list ─────────────────────────────────────────────────
 const BANKS = [
@@ -115,10 +115,11 @@ interface Props {
     userId: string
     accountNumber: string
     fullName: string
+    userStatus: string
     recentTransfers: Transfer[]
 }
 
-export default function TransferClient({ userId, accountNumber, fullName, recentTransfers }: Props) {
+export default function TransferClient({ userId, accountNumber, fullName, userStatus, recentTransfers }: Props) {
     const router = useRouter()
     const [isPending, startTransition] = useTransition()
 
@@ -168,6 +169,8 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
         amount: string; recipientName: string; bank: string
     } | null>(null)
 
+    const [restrictedModal, setRestrictedModal] = useState(false)
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
         setFields(p => ({ ...p, [name]: value }))
@@ -196,6 +199,15 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Block FROZEN accounts immediately — no server call needed
+        if (userStatus === "FROZEN") {
+            setRestrictedModal(true)
+            // Fire notification email in the background
+            notifyRestrictedAttemptAction(userId).catch(console.error)
+            return
+        }
+
         if (!validate()) return
         setGlobalError(null)
         startTransition(async () => {
@@ -508,6 +520,62 @@ export default function TransferClient({ userId, accountNumber, fullName, recent
                         </div>
                         <div className="transfer__modal-footer">
                             <button onClick={closeModal} className="transfer__modal-btn">Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Restricted Account Modal ── */}
+            {restrictedModal && (
+                <div className="transfer__modal-overlay">
+                    <div className="transfer__modal" style={{ borderColor: "rgba(239,68,68,0.35)" }}>
+                        <div className="transfer__modal-header" style={{ borderBottomColor: "rgba(239,68,68,0.15)" }}>
+                            <h2 style={{ color: "#fdf6e3" }}>Transaction Blocked</h2>
+                            <button onClick={() => setRestrictedModal(false)} aria-label="Close" className="transfer__modal-close">
+                                <XCircle size={20} />
+                            </button>
+                        </div>
+                        <div className="transfer__modal-body">
+                            <div className="transfer__modal-icon" style={{
+                                background: "rgba(239,68,68,0.08)",
+                                border: "1px solid rgba(239,68,68,0.3)",
+                                color: "#ef4444",
+                                borderRadius: "50%",
+                                width: 72, height: 72,
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                margin: "0 auto 20px"
+                            }}>
+                                <Lock size={32} />
+                            </div>
+                            <p className="transfer__modal-status" style={{ color: "#fdf6e3", fontSize: "1.05rem", marginBottom: 8 }}>
+                                We cannot process this transaction at this time.
+                            </p>
+                            <p style={{
+                                fontSize: "0.8rem",
+                                color: "rgba(216,220,232,0.55)",
+                                lineHeight: 1.7,
+                                textAlign: "center",
+                                margin: "0 0 24px"
+                            }}>
+                                Your account has been temporarily restricted from making outgoing transfers
+                                by our compliance team. A notification has been sent to your registered email address.
+                            </p>
+                            <div style={{
+                                background: "rgba(196,149,32,0.06)",
+                                border: "1px solid rgba(196,149,32,0.2)",
+                                borderRadius: 2,
+                                padding: "16px 20px",
+                            }}>
+                                <p style={{ margin: "0 0 6px", fontSize: "11px", letterSpacing: "0.15em", textTransform: "uppercase", color: "#c49520", fontWeight: 700 }}>Contact Customer Service</p>
+                                <p style={{ margin: 0, fontSize: "13px", color: "rgba(216,220,232,0.75)", lineHeight: 1.6 }}>
+                                    Email: <strong style={{ color: "#d8dce8" }}>support@goldenprivatewealth.com</strong><br />
+                                    Phone: <strong style={{ color: "#d8dce8" }}>+44 (0)20 7000 0000</strong><br />
+                                    Hours: Mon–Fri, 09:00–17:30 GMT
+                                </p>
+                            </div>
+                        </div>
+                        <div className="transfer__modal-footer">
+                            <button onClick={() => setRestrictedModal(false)} className="transfer__modal-btn">Close</button>
                         </div>
                     </div>
                 </div>
