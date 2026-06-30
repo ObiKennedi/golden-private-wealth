@@ -3,6 +3,7 @@
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import { prisma } from "@/lib/db";
+import { sendTransferNotificationEmail, sendSavingsNotificationEmail } from "@/lib/email";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
 
@@ -77,6 +78,18 @@ export async function approveTransferAction(prevState: any, formData: FormData) 
             });
         });
 
+        // Send approval email — fire-and-forget
+        sendTransferNotificationEmail({
+            to: transfer.user.email,
+            userName: transfer.user.fullName,
+            reference: transfer.reference,
+            amount,
+            recipientName: transfer.recipientName,
+            recipientBank: transfer.recipientBank,
+            status: "COMPLETED",
+            note: transfer.note,
+        }).catch(console.error);
+
         return { success: true };
     } catch (err: any) {
         console.error("[approveTransferAction]", err);
@@ -103,6 +116,21 @@ export async function rejectTransferAction(prevState: any, formData: FormData) {
                 metadata: { transferId }
             }
         });
+
+        // Send rejection email — fire-and-forget
+        const rejectedTransfer = await prisma.transfer.findUnique({ where: { id: transferId }, include: { user: { select: { email: true, fullName: true } } } });
+        if (rejectedTransfer) {
+            sendTransferNotificationEmail({
+                to: rejectedTransfer.user.email,
+                userName: rejectedTransfer.user.fullName,
+                reference: rejectedTransfer.reference,
+                amount: Number(rejectedTransfer.amount),
+                recipientName: rejectedTransfer.recipientName,
+                recipientBank: rejectedTransfer.recipientBank,
+                status: "REJECTED",
+                note: rejectedTransfer.note,
+            }).catch(console.error);
+        }
 
         return { success: true };
     } catch (err: any) {
@@ -181,6 +209,18 @@ export async function reverseTransferAction(prevState: any, formData: FormData) 
                 }
             });
         });
+
+        // Send reversal email — fire-and-forget
+        sendTransferNotificationEmail({
+            to: transfer.user.email,
+            userName: transfer.user.fullName,
+            reference: transfer.reference,
+            amount,
+            recipientName: transfer.recipientName,
+            recipientBank: transfer.recipientBank,
+            status: "REVERSED",
+            note: transfer.note,
+        }).catch(console.error);
 
         return { success: true };
     } catch (err: any) {
@@ -278,6 +318,22 @@ export async function approveSavingsWithdrawalAction(prevState: any, formData: F
             });
         });
 
+        // Send savings approval email — fire-and-forget
+        const savingsApprovalUser = await prisma.user.findUnique({ where: { id: lock.userId }, select: { email: true, fullName: true } });
+        if (savingsApprovalUser) {
+            sendSavingsNotificationEmail({
+                to: savingsApprovalUser.email,
+                userName: savingsApprovalUser.fullName,
+                amount: principal,
+                lockDays: lock.lockDays,
+                projectedInterest: interest,
+                projectedTotal: totalPayout,
+                unlocksAt: lock.unlocksAt,
+                referenceId: lock.referenceId,
+                type: "WITHDRAWAL_APPROVED",
+            }).catch(console.error);
+        }
+
         return { success: true };
     } catch (err: any) {
         console.error("[approveSavingsWithdrawalAction]", err);
@@ -320,6 +376,27 @@ export async function rejectSavingsWithdrawalAction(prevState: any, formData: Fo
                 },
             });
         });
+
+        // Send savings rejection email — fire-and-forget
+        const rejectedLock = await prisma.savingsLock.findUnique({
+            where: { id: lockId },
+            include: { user: { select: { email: true, fullName: true } } },
+        });
+        if (rejectedLock) {
+            const rejPrincipal = Number(rejectedLock.amount);
+            const rejInterest = +(rejPrincipal * rejectedLock.lockDays * Number(rejectedLock.interestRatePerDay)).toFixed(2);
+            sendSavingsNotificationEmail({
+                to: rejectedLock.user.email,
+                userName: rejectedLock.user.fullName,
+                amount: rejPrincipal,
+                lockDays: rejectedLock.lockDays,
+                projectedInterest: rejInterest,
+                projectedTotal: +(rejPrincipal + rejInterest).toFixed(2),
+                unlocksAt: rejectedLock.unlocksAt,
+                referenceId: rejectedLock.referenceId,
+                type: "WITHDRAWAL_REJECTED",
+            }).catch(console.error);
+        }
 
         return { success: true };
     } catch (err: any) {

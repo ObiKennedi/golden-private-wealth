@@ -4,6 +4,7 @@ import { cookies } from "next/headers"
 import { jwtVerify } from "jose"
 import { prisma } from "@/lib/db"
 import { z } from "zod"
+import { sendTransferNotificationEmail } from "@/lib/email"
 
 export async function verifyInternalAccountAction(accountNumber: string) {
     if (!accountNumber || accountNumber.length < 4) {
@@ -183,6 +184,21 @@ export async function submitTransferAction(prevState: any, formData: FormData) {
                 })
             })
 
+            // Send confirmation email — fire-and-forget (does not block or fail the transfer)
+            const senderUser = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, fullName: true } })
+            if (senderUser) {
+                sendTransferNotificationEmail({
+                    to: senderUser.email,
+                    userName: senderUser.fullName,
+                    reference,
+                    amount,
+                    recipientName,
+                    recipientBank,
+                    status: "COMPLETED",
+                    note: note || null,
+                }).catch(console.error)
+            }
+
             return { success: true, reference, isInternal: true }
         }
 
@@ -200,6 +216,21 @@ export async function submitTransferAction(prevState: any, formData: FormData) {
                 status: "PENDING",
             },
         })
+
+        // Send pending confirmation email — fire-and-forget
+        const senderUser = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, fullName: true } })
+        if (senderUser) {
+            sendTransferNotificationEmail({
+                to: senderUser.email,
+                userName: senderUser.fullName,
+                reference,
+                amount,
+                recipientName,
+                recipientBank,
+                status: "PENDING",
+                note: note || null,
+            }).catch(console.error)
+        }
 
         return { success: true, reference, isInternal: false }
     } catch (err: any) {

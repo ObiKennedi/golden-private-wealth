@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { sendSavingsNotificationEmail } from "@/lib/email";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "fallback-secret");
 
@@ -125,6 +126,23 @@ export async function lockSavingsAction(prevState: any, formData: FormData) {
         });
 
         revalidatePath("/user/savings");
+
+        // Send lock confirmation email — fire-and-forget
+        const lockUser = await prisma.user.findUnique({ where: { id: session.userId }, select: { email: true, fullName: true } });
+        if (lockUser) {
+            sendSavingsNotificationEmail({
+                to: lockUser.email,
+                userName: lockUser.fullName,
+                amount,
+                lockDays,
+                projectedInterest: +(amount * lockDays * 0.01).toFixed(2),
+                projectedTotal: +(amount + amount * lockDays * 0.01).toFixed(2),
+                unlocksAt,
+                referenceId: lockTxRef,
+                type: "LOCKED",
+            }).catch(console.error);
+        }
+
         return { success: true };
     } catch (err: any) {
         console.error("[lockSavingsAction]", err);
@@ -208,6 +226,23 @@ export async function requestSavingsWithdrawalAction(prevState: any, formData: F
         });
 
         revalidatePath("/user/savings");
+
+        // Send withdrawal request email — fire-and-forget
+        const withdrawUser = await prisma.user.findUnique({ where: { id: session.userId }, select: { email: true, fullName: true } });
+        if (withdrawUser) {
+            sendSavingsNotificationEmail({
+                to: withdrawUser.email,
+                userName: withdrawUser.fullName,
+                amount: principal,
+                lockDays: lock.lockDays,
+                projectedInterest: interest,
+                projectedTotal: totalPayout,
+                unlocksAt: lock.unlocksAt,
+                referenceId: lock.referenceId,
+                type: "WITHDRAWAL_REQUESTED",
+            }).catch(console.error);
+        }
+
         return { success: true };
     } catch (err: any) {
         console.error("[requestSavingsWithdrawalAction]", err);
