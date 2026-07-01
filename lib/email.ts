@@ -239,13 +239,6 @@ export async function sendAccountRestrictedEmail(params: { to: string; userName:
     </h2>
     <p style="margin:0 0 28px;font-size:14px;color:rgba(216,220,232,0.6);">Hello ${userName},</p>
 
-    <div style="background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.35);border-radius:2px;padding:20px 24px;margin-bottom:28px;">
-      <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(220,38,38,0.8);font-weight:700;">Account Restricted</p>
-      <p style="margin:0;font-size:14px;color:rgba(216,220,232,0.8);line-height:1.7;">
-        Outgoing transactions from your Golden Private Wealth account have been temporarily restricted
-        by our compliance team. You will not be able to initiate any transfers until the restriction is lifted.
-      </p>
-    </div>
 
     <p style="font-size:14px;color:rgba(216,220,232,0.7);line-height:1.7;margin:0 0 20px;">
       If you believe this is an error, or to resolve this matter, please contact our Customer Service team immediately:
