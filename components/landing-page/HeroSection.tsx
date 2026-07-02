@@ -15,7 +15,7 @@ export const HeroSection = () => {
     }, []);
 
     return (
-        <section className="hero-section">
+        <section className="hero-section" id="home">
             <video
                 src="/landing-page/hero-bg.mp4"
                 autoPlay

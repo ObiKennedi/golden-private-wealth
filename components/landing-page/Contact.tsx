@@ -131,17 +131,25 @@ export const ContactSection = () => {
                                 </div>
                             </a>
                         ))}
+                        <div className="contact-hours">
+                            <p className="contact-hours__label">Client Desk Hours</p>
+                            <div className="contact-hours__rows">
+                                <div><span>Monday – Friday</span><span>7:00 AM – 8:00 PM EST</span></div>
+                                <div><span>Saturday</span><span>9:00 AM – 2:00 PM EST</span></div>
+                                <div><span>Emergency Line</span><span>24 / 7</span></div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Hours */}
-                    <div className="contact-hours">
+                    {/* <div className="contact-hours">
                         <p className="contact-hours__label">Client Desk Hours</p>
                         <div className="contact-hours__rows">
                             <div><span>Monday – Friday</span><span>7:00 AM – 8:00 PM EST</span></div>
                             <div><span>Saturday</span><span>9:00 AM – 2:00 PM EST</span></div>
                             <div><span>Emergency Line</span><span>24 / 7</span></div>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
 
                 {/* ── Right — Web3Forms form ── */}

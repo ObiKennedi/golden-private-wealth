@@ -17,24 +17,26 @@ export const Footer = () => {
                 <div className="footer-links-grid">
                     <div className="footer-nav-group">
                         <h4>Institution</h4>
-                        <a href="#about-us">About Us</a>
+                        <a href="#home">Home</a>
+                        <a href="#about">About Us</a>
                         <a href="#private-banking">Private Banking</a>
-                        <a href="#portfolio-management">Portfolio Management</a>
+                        <a href="#portfolio">Portfolio Management</a>
                     </div>
 
                     <div className="footer-nav-group">
                         <h4>Strategies</h4>
                         <a href="#yield-enhancement">Yield Enhancement</a>
-                        <a href="/esg">Sovereign ESG</a>
-                        <a href="/security">Vault Infrastructure</a>
+                        <a href="#why-choose-us">Wealth Management</a>
+                        {/* <a href="/esg">Sovereign ESG</a> */}
+                        {/* <a href="/security">Vault Infrastructure</a> */}
                     </div>
 
-                    <div className="footer-nav-group">
+                    {/* <div className="footer-nav-group">
                         <h4>Governance</h4>
                         <a href="/regulatory">Regulatory Disclosure</a>
                         <a href="/terms">Terms of Custody</a>
                         <a href="/privacy">Privacy Protocol</a>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 

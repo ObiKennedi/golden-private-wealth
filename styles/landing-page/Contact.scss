@@ -131,7 +131,7 @@
 // ── Two-column body ────────────────────────────────────────────
 .contact-body {
     display: grid;
-    grid-template-columns: 1fr 1.55fr;
+    // grid-template-columns: 1fr 1.55fr;
     gap: 1px;
     max-width: 1200px;
     margin: 0 auto;
@@ -141,7 +141,7 @@
 
 // ── Left — Info panel ──────────────────────────────────────────
 .contact-info {
-    background: var(--color-bg-base, #131829);
+    background: var(--color-bg-elevated, #1a2038);
     display: flex;
     flex-direction: column;
     gap: 1px;
